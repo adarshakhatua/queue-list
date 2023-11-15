@@ -1,0 +1,13 @@
+{
+  "name": "queue-list",
+  "version": "1.0.2",
+  "description": "This is a package to create queue data structure",
+  "main": "index.js",
+  "type":"module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": ["Queue","queue","linkedList-queue","JS queue", "queue in JavaScript","queue data structure in js"],
+  "author": "Adarsha Khatua",
+  "license": "ISC"
+}
