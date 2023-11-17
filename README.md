@@ -86,6 +86,7 @@ const queueArray = myQueue.ToArray();
 
 Example
 
+
 ```
 const myQueue = new Queue(1, 2, 3);
 
@@ -123,4 +124,5 @@ This project is licensed under the MIT License - see the LICENSE.md file for det
 # Acknowledgments
 This package is inspired by the need for a simple and efficient queue implementation in JavaScript.
 Feel free to use and contribute to make this package even better! If you encounter any issues or have suggestions for improvement, please open an issue on the GitHub repository.
+Here is the [GitHub Repo Link](https://github.com/adarshakhatua/queue-list).
 
