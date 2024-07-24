@@ -6,9 +6,19 @@ Queue.prototype.dequeue = function () {
     enumerable: true,
     writable: true,
   });
-  let { start } = this;
+  Object.defineProperty(this, "last", {
+    enumerable: true,
+    writable: true,
+  });
+  let { start,length } = this;
+  if(length===0){return null}
   let value = start.value;
-  this.start = this.start.next;
+  if(length===1){
+    this.start=null;;
+    this.last = null;
+  }else{
+    this.start = this.start.next;
+  }
   Object.defineProperty(this, "start", {
     enumerable: true,
     writable: false,
@@ -19,6 +29,10 @@ Queue.prototype.dequeue = function () {
   });
   this.length--;
   Object.defineProperty(this, "length", {
+    enumerable: false,
+    writable: false,
+  });
+  Object.defineProperty(this, "last", {
     enumerable: false,
     writable: false,
   });
@@ -34,8 +48,17 @@ Queue.prototype.enqueue = function (value) {
     enumerable: false,
     writable: true,
   });
+  Object.defineProperty(this, "start", {
+    enumerable: false,
+    writable: true,
+  });
   let node = new Node(value);
-  this.last.setNext(node);
+
+  if(!this.length){
+    this.start =node;
+  }else{
+    this.last.setNext(node);
+  }
   this.length++;
   this.last = node;
   Object.defineProperty(this, "length", {
@@ -46,11 +69,15 @@ Queue.prototype.enqueue = function (value) {
     enumerable: false,
     writable: false,
   });
+  Object.defineProperty(this, "start", {
+    enumerable: false,
+    writable: false,
+  });
   return this;
 };
 
 Queue.prototype.peek = function () {
-  return this.start.value;
+  return this.length?this.start.value:this.start;
 };
 
 Queue.prototype.isEmpty = function () {
@@ -114,7 +141,7 @@ Queue.prototype.toString = function () {
 
   for (let i = 0; i < this.length; i++) {
     let value = next.value;
-    queueStr += `[${value}] `;
+    queueStr += `|${JSON.stringify(value)}| `;
     next = next.next;
   }
   queueStr += "<- Rear";
@@ -126,7 +153,7 @@ Queue.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
 };
 
 Queue.prototype.getType = function () {
-  return "Queue";
+  return "queue";
 };
 const originalConsoleLog = console.log;
 
@@ -135,7 +162,7 @@ console.log = function (...args) {
     if (
       arg &&
       typeof arg.getType === "function" &&
-      arg.getType() === "Queue" &&
+      arg.getType() === "queue" &&
       typeof arg.toString === "function"
     ) {
       return arg.toString();

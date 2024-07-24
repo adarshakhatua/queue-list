@@ -22,7 +22,6 @@ function Queue(...values){
         start = null;
         next = null;
     }
-  
 
     this.start = start;
     this.length = values.length;
