@@ -6,8 +6,6 @@
 
 ---
 
-# `queue-list`
-
 ## Overview
 
 `queue-list` is a JavaScript library for managing a queue data structure. It provides a simple and efficient way to handle elements in a queue with various methods for manipulating and querying the queue. The library also customizes `console.log` to format `Queue` instances.
