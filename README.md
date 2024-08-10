@@ -1,123 +1,362 @@
+
+
+
+
 # queue-list
 
-`queue-list` is a simple npm package that provides an implementation of a queue data structure in JavaScript. It allows you to easily create and manipulate queues with enqueue, dequeue, peek, isEmpty, size, clear, and toArray operations. LinkedList is used to achieve this.
+---
 
-#### 👉`Note`: all the methods  including enqueue, dequeue, peek, isEmpty, size, clear is having constant time complexity😎 O(1)
+# `queue-list`
+
+## Overview
+
+`queue-list` is a JavaScript library for managing a queue data structure. It provides a simple and efficient way to handle elements in a queue with various methods for manipulating and querying the queue. The library also customizes `console.log` to format `Queue` instances.
 
 ## Installation
 
-To install the package, use npm:
+To install `queue-list`, use npm:
 
-```javascript
+```bash
 npm install queue-list
-```
-# Usage
 
-### Importing the package
-```javascript
+```
+
+## Importing
+
+```jsx
 import Queue from 'queue-list';
-```
-
-### Creating a Queue
-```javascript
-// Creating an empty queue
-const myQueue = new Queue();
-
-// Creating a queue with initial values
-const initializedQueue = new Queue(1, 2, 3);
-console.log(initializedQueue);
-
-//Expected output will be like 
-Queue {
-  start: Node { value: 1, next: Node { value: 2, next: Node { value: 3, next: null } } },
-  last: Node { value: 3, next: null }
-}
-//Here start is referring to starting Node and last is referring to the last Node of the LinkedList.
-
-console.log(initializedQueue.length);
-//expected output is 3
 
 ```
- 
 
-## Enqueue
-Add an element to the end of the queue.
+## Methods
 
-```javascript
-myQueue.Enqueue(4);
+| Method | Purpose | Returns | Time Complexity | Example Use Case |
+| --- | --- | --- | --- | --- |
+| enqueue | Adds a new element to the end of the queue. | The queue instance (this) | O(1) | queue.enqueue(1).enqueue(2); |
+| dequeue | Removes and returns the element at the front of the queue. | The removed element or null if empty | O(1) | const value = queue.dequeue(); // 1 |
+| peek | Returns the value of the front element without removing it. | The front element or null if empty | O(1) | const front = queue.peek(); // 2 |
+| isEmpty | Checks if the queue is empty. | true if empty, false otherwise | O(1) | const empty = queue.isEmpty(); // false |
+| size | Returns the number of elements in the queue. | The number of elements | O(1) | const length = queue.size(); // 1 |
+| clear | Removes all elements from the queue and resets it to an empty state. | The queue instance (this) | O(1) | queue.clear(); |
+| toArray | Converts the queue to an array of elements. | An array of elements | O(n) | const array = queue.toArray(); // [2] |
+| getType | Returns the type of data structure. | "queue" | O(1) | const type = queue.getType(); // "queue" |
+
+## Custom Console Logging
+
+The `console.log` method has been customized to properly handle and format `Queue` instances. When logging a `Queue` instance, its `toString` representation will be used.
+
+### Custom Console Log Example
+
+```jsx
+import Queue from 'queue-list';
+
+const queue = new Queue();
+queue.enqueue(10).enqueue(20).enqueue(30);
+
+console.log(queue); // Output: Front -> |10| |20| |30| <- Rear
+
+queue.dequeue();
+console.log(queue); // Output: Front -> |20| |30| <- Rear
+
+queue.clear();
+console.log(queue); // Output: Front -> [] <- Rear
+
 ```
 
-## Dequeue
-Remove and return the element from the front of the queue.
+## Detailed Example Use Cases
 
-```javascript
-const dequeuedItem = myQueue.Dequeue();
+## `enqueue(value)`
+
+**Purpose:** Adds a new element to the end of the queue.
+
+**Typical Use Case:**
+
+```jsx
+import Queue from 'queue-list';
+
+const queue = new Queue();
+queue.enqueue(1).enqueue(2).enqueue(3);
+console.log(queue); // Output: "Front -> |1| |2| |3| <- Rear"
+
 ```
 
-## Peek
-Get the element at the front of the queue without removing it.
-```javascript
-const frontElement = myQueue.Peek();
+**Edge Cases:**
+
+1. **Enqueue on an empty queue:**
+    
+    ```jsx
+    const queue = new Queue();
+    queue.enqueue(10);
+    console.log(queue.toString()); // Output: "Front -> |10| <- Rear"
+    
+    ```
+    
+2. **Enqueue on a non-empty queue:**
+    
+    ```jsx
+    const queue = new Queue();
+    queue.enqueue(1).enqueue(2);
+    queue.enqueue(3);
+    console.log(queue.toString()); // Output: "Front -> |1| |2| |3| <- Rear"
+    
+    ```
+    
+
+## `dequeue()`
+
+**Purpose:** Removes and returns the element at the front of the queue. Returns `null` if the queue is empty.
+
+**Typical Use Case:**
+
+```jsx
+import Queue from 'queue-list';
+
+const queue = new Queue();
+queue.enqueue(1).enqueue(2).enqueue(3);
+console.log(queue.dequeue()); // Output: 1
+console.log(queue.toString()); // Output: "Front -> |2| |3| <- Rear"
+
 ```
 
-## IsEmpty
-Check if the queue is empty.
-```javascript
-const emptyStatus = myQueue.IsEmpty();
+**Edge Cases:**
+
+1. **Dequeue from an empty queue:**
+    
+    ```jsx
+    const queue = new Queue();
+    console.log(queue.dequeue()); // Output: null
+    
+    ```
+    
+2. **Dequeue until the queue is empty:**
+    
+    ```jsx
+    const queue = new Queue();
+    queue.enqueue(1).enqueue(2);
+    console.log(queue.dequeue()); // Output: 1
+    console.log(queue.dequeue()); // Output: 2
+    console.log(queue.dequeue()); // Output: null
+    
+    ```
+    
+
+## `peek()`
+
+**Purpose:** Returns the value of the front element without removing it. Returns `null` if the queue is empty.
+
+**Typical Use Case:**
+
+```jsx
+import Queue from 'queue-list';
+
+const queue = new Queue();
+queue.enqueue(10).enqueue(20).enqueue(30);
+console.log(queue.peek()); // Output: 10
+
 ```
 
-## Size
-Get the number of elements in the queue.
-```javascript
-const queueSize = myQueue.Size();
+**Edge Cases:**
+
+1. **Peek on an empty queue:**
+    
+    ```jsx
+    const queue = new Queue();
+    console.log(queue.peek()); // Output: null
+    
+    ```
+    
+2. **Peek after several enqueues and dequeues:**
+    
+    ```jsx
+    const queue = new Queue();
+    queue.enqueue(1).enqueue(2).enqueue(3);
+    queue.dequeue(); // Removes 1
+    console.log(queue.peek()); // Output: 2
+    
+    ```
+    
+
+## `isEmpty()`
+
+**Purpose:** Checks if the queue is empty.
+
+**Typical Use Case:**
+
+```jsx
+import Queue from 'queue-list';
+
+const queue = new Queue();
+queue.enqueue(1);
+console.log(queue.isEmpty()); // Output: false
+queue.dequeue();
+console.log(queue.isEmpty()); // Output: true
+
 ```
 
-## Clear
-Remove all elements from the queue.
-```javascript
-myQueue.Clear();
+**Edge Cases:**
+
+1. **Check if an empty queue is empty:**
+    
+    ```jsx
+    const queue = new Queue();
+    console.log(queue.isEmpty()); // Output: true
+    
+    ```
+    
+2. **Check after adding and removing elements:**
+    
+    ```jsx
+    const queue = new Queue();
+    queue.enqueue(5);
+    console.log(queue.isEmpty()); // Output: false
+    queue.dequeue();
+    console.log(queue.isEmpty()); // Output: true
+    
+    ```
+    
+
+## `size()`
+
+**Purpose:** Returns the number of elements in the queue.
+
+**Typical Use Case:**
+
+```jsx
+import Queue from 'queue-list';
+
+const queue = new Queue();
+queue.enqueue(1).enqueue(2).enqueue(3);
+console.log(queue.size()); // Output: 3
+
 ```
 
-## ToArray
-Convert the queue to an array.
-```javascript
-const queueArray = myQueue.ToArray();
+**Edge Cases:**
+
+1. **Size of an empty queue:**
+    
+    ```jsx
+    const queue = new Queue();
+    console.log(queue.size()); // Output: 0
+    
+    ```
+    
+2. **Size after several operations:**
+    
+    ```jsx
+    const queue = new Queue();
+    queue.enqueue(10).enqueue(20);
+    queue.dequeue();
+    console.log(queue.size()); // Output: 1
+    
+    ```
+    
+
+## `clear()`
+
+**Purpose:** Removes all elements from the queue and resets it to an empty state.
+
+**Typical Use Case:**
+
+```jsx
+import Queue from 'queue-list';
+
+const queue = new Queue();
+queue.enqueue(1).enqueue(2).enqueue(3);
+queue.clear();
+console.log(queue.toString()); // Output: "Front -> [] <- Rear"
+console.log(queue.isEmpty()); // Output: true
+
 ```
 
-Example
+**Edge Cases:**
 
+1. **Clear an empty queue:**
+    
+    ```jsx
+    const queue = new Queue();
+    queue.clear();
+    console.log(queue.toString()); // Output: "Front -> [] <- Rear"
+    
+    ```
+    
+2. **Clear a queue with elements:**
+    
+    ```jsx
+    const queue = new Queue();
+    queue.enqueue(5).enqueue(6);
+    queue.clear();
+    console.log(queue.size()); // Output: 0
+    
+    ```
+    
 
-```javascript
-const myQueue = new Queue(1, 2, 3);
+## `toArray()`
 
-myQueue.Enqueue(4);
-myQueue.Enqueue(5);
+**Purpose:** Converts the queue to an array of elements.
 
-console.log(myQueue.ToArray()); // [1, 2, 3, 4, 5]
+**Typical Use Case:**
 
-const dequeuedItem = myQueue.Dequeue();
-console.log(dequeuedItem); // 1
+```jsx
+import Queue from 'queue-list';
 
-console.log(myQueue.Size()); // 4
-console.log(myQueue.Peek()); // 2
+const queue = new Queue();
+queue.enqueue(1).enqueue(2).enqueue(3);
+console.log(queue.toArray()); // Output: [1, 2, 3]
 
-myQueue.Clear();
-console.log(myQueue.IsEmpty()); // true
 ```
-Methods  | Use case | Time Complexity
-------------- | ------------- | -------------
- Enqueue | Add an element to the end of the queue.  | O(1)
-Dequeue  | Remove and return the element from the front of the queue.  | O(1)
-Peek  | Get the element at the front of the queue without removing it.  | O(1)
-IsEmpty  | Check if the queue is empty and return a boolean value  | O(1)
-Size  | Get the number of elements in the queue.  | O(1)
-Clear  | Remove all elements from the queue.  | O(1)
-ToArray  | Convert the queue to an array.  | O(n)
 
-### ➡️ the length of the queue can be accessed in two ways
-1. <b>length property </b> 
-2. <b>Size method</b>
+**Edge Cases:**
 
+1. **Convert an empty queue to an array:**
+    
+    ```jsx
+    const queue = new Queue();
+    console.log(queue.toArray()); // Output: []
+    
+    ```
+    
+2. **Convert a queue with multiple elements:**
+    
+    ```jsx
+    const queue = new Queue();
+    queue.enqueue('a').enqueue('b').enqueue('c');
+    console.log(queue.toArray()); // Output: ['a', 'b', 'c']
+    
+    ```
+    
+
+### `getType()`
+
+**Purpose:** Returns the type of data structure.
+
+**Typical Use Case:**
+
+```jsx
+import Queue from 'queue-list';
+
+const queue = new Queue();
+console.log(queue.getType()); // Output: "queue"
+
+```
+
+**Edge Cases:**
+
+1. **Type of an empty queue:**
+    
+    ```jsx
+    const queue = new Queue();
+    console.log(queue.getType()); // Output: "queue"
+    
+    ```
+    
+2. **Type after various operations:**
+    
+    ```jsx
+    const queue = new Queue();
+    queue.enqueue(1);
+    console.log(queue.getType()); // Output: "queue"
+    
+    ```
 # License
 This project is licensed under the MIT License - see the LICENSE.md file for details.
 
