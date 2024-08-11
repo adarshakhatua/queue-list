@@ -30,7 +30,7 @@ import Queue from 'queue-list';
 | isEmpty | Checks if the queue is empty. | `true` if empty, `false` otherwise | O(1) | `const empty = queue.isEmpty(); // false` |
 | size | Returns the number of elements in the queue. | The number of elements | O(1) | `const length = queue.size(); // 2` |
 | clear | Removes all elements from the queue and resets it to an empty state. | The queue instance (this) | O(1) | `queue.clear();` |
-| toArray | Converts the queue to an array of elements. | An array of elements | O(n) | `const array = queue.toArray(); // [2, 'text', { key: 'value' }]` |
+| toArray | Converts the queue to an array of elements. | An array of elements | O(n) | `const array = queue.toArray(); // [1, 'text', '{"key":"value"}']` |
 | getType | Returns the type of data structure. | "queue" | O(1) | `const type = queue.getType(); // "queue"` |
 
 ## Custom Console Logging
@@ -44,10 +44,10 @@ import Queue from 'queue-list';
 
 const queue = new Queue(10, 'text', { key: 'value' });
 
-console.log(queue); // Output: Front -> |10| |text| |[object Object]| <- Rear
+console.log(queue); // Output: Front -> |10| |text| |{"key":"value"}| <- Rear
 
 queue.dequeue();
-console.log(queue); // Output: Front -> |text| |[object Object]| <- Rear
+console.log(queue); // Output: Front -> |text| |{"key":"value"}| <- Rear
 
 queue.clear();
 console.log(queue); // Output: Front -> || <- Rear
@@ -66,7 +66,7 @@ import Queue from 'queue-list';
 
 const queue = new Queue(1, 'string', true, [1, 2], { key: 'value' });
 queue.enqueue(null).enqueue(undefined);
-console.log(queue); // Output: "Front -> |1| |string| |true| |[1,2]| |[object Object]| |null| |undefined| <- Rear"
+console.log(queue); // Output: "Front -> |1| |string| |true| |[1,2]| |{"key":"value"}| |null| |undefined| <- Rear"
 ```
 
 **Edge Cases:**
@@ -76,7 +76,7 @@ console.log(queue); // Output: "Front -> |1| |string| |true| |[1,2]| |[object Ob
 ```jsx
 const queue = new Queue();
 queue.enqueue(10).enqueue('text').enqueue([1, 2, 3]).enqueue({ key: 'value' });
-console.log(queue); // Output: "Front -> |10| |text| |[1,2,3]| |[object Object]| <- Rear"
+console.log(queue); // Output: "Front -> |10| |text| |[1,2,3]| |{"key":"value"}| <- Rear"
 ```
 
 2. **Enqueue on a non-empty queue:**
@@ -84,7 +84,7 @@ console.log(queue); // Output: "Front -> |10| |text| |[1,2,3]| |[object Object]|
 ```jsx
 const queue = new Queue('initial');
 queue.enqueue(42).enqueue({ foo: 'bar' }).enqueue([1, 2]);
-console.log(queue); // Output: "Front -> |initial| |42| |[object Object]| |[1,2]| <- Rear"
+console.log(queue); // Output: "Front -> |initial| |42| |{"foo":"bar"}| |[1,2]| <- Rear"
 ```
 
 ## `dequeue()`
@@ -98,7 +98,7 @@ import Queue from 'queue-list';
 
 const queue = new Queue(1, 'text', { key: 'value' });
 console.log(queue.dequeue()); // Output: 1
-console.log(queue); // Output: "Front -> |text| |[object Object]| <- Rear"
+console.log(queue); // Output: "Front -> |text| |{"key":"value"}| <- Rear"
 ```
 
 **Edge Cases:**
@@ -258,7 +258,7 @@ console.log(queue.size()); // Output: 0
 import Queue from 'queue-list';
 
 const queue = new Queue(1, 'text', [1, 2], { key: 'value' });
-console.log(queue.toArray()); // Output: [1, 'text', [1, 2], { key: 'value' }]
+console.log(queue.toArray()); // Output: [1, 'text', '[1,2]', '{"key":"value"}']
 ```
 
 **Edge Cases:**
@@ -274,7 +274,7 @@ console.log(queue.toArray()); // Output: []
 
 ```jsx
 const queue = new Queue('string', 42, { foo: 'bar' }, [1, 2]);
-console.log(queue.toArray()); // Output: ['string', 42, { foo: 'bar' }, [1, 2]]
+console.log(queue.toArray()); // Output: ['string', 42, '{"foo":"bar"}', '[1,2]']
 ```
 
 ### `getType()`
@@ -294,11 +294,11 @@ console.log(queue.getType()); // Output: "queue"
 
 1. **Type of an empty queue:**
 
+
+
 ```jsx
 const queue = new Queue();
-console.log(queue.getType
-
-()); // Output: "queue"
+console.log(queue.getType()); // Output: "queue"
 ```
 
 2. **Type after various operations:**
