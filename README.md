@@ -1,6 +1,3 @@
-Certainly! I’ll adjust the examples to use an initializer for the `Queue` instance, as you requested. Here’s the revised documentation with updated examples:
-
----
 
 # queue-list
 
@@ -54,7 +51,7 @@ queue.dequeue();
 console.log(queue); // Output: Front -> |20| |30| <- Rear
 
 queue.clear();
-console.log(queue); // Output: Front -> [] <- Rear
+console.log(queue); // Output: Front -> || <- Rear
 ```
 
 ## Detailed Example Use Cases
@@ -228,7 +225,7 @@ import Queue from 'queue-list';
 
 const queue = new Queue(1, 2, 3);
 queue.clear();
-console.log(queue.toString()); // Output: "Front -> [] <- Rear"
+console.log(queue.toString()); // Output: "Front -> || <- Rear"
 console.log(queue.isEmpty()); // Output: true
 ```
 
@@ -239,7 +236,7 @@ console.log(queue.isEmpty()); // Output: true
 ```jsx
 const queue = new Queue();
 queue.clear();
-console.log(queue.toString()); // Output: "Front -> [] <- Rear"
+console.log(queue.toString()); // Output: "Front -> || <- Rear"
 ```
 
 2. **Clear a queue with elements:**
