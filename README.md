@@ -1,9 +1,8 @@
-
 # queue-list
 
----
-
 ## Overview
+
+#### 👉Note: All methods including `enqueue`, `dequeue`, `peek`, `isEmpty`, `size`, and `clear` have constant time complexity 😎 O(1)
 
 `queue-list` is a JavaScript library for managing a queue data structure. It provides a simple and efficient way to handle elements in a queue with various methods for manipulating and querying the queue. The library also customizes `console.log` to format `Queue` instances.
 
@@ -25,13 +24,13 @@ import Queue from 'queue-list';
 
 | Method | Purpose | Returns | Time Complexity | Example Use Case |
 | --- | --- | --- | --- | --- |
-| enqueue | Adds a new element to the end of the queue. | The queue instance (this) | O(1) | `queue.enqueue(1).enqueue(2);` |
+| enqueue | Adds a new element to the end of the queue. | The queue instance (this) | O(1) | `queue.enqueue(1).enqueue('text').enqueue({ key: 'value' });` |
 | dequeue | Removes and returns the element at the front of the queue. | The removed element or null if empty | O(1) | `const value = queue.dequeue(); // 1` |
-| peek | Returns the value of the front element without removing it. | The front element or null if empty | O(1) | `const front = queue.peek(); // 2` |
+| peek | Returns the value of the front element without removing it. | The front element or null if empty | O(1) | `const front = queue.peek(); // 'text'` |
 | isEmpty | Checks if the queue is empty. | `true` if empty, `false` otherwise | O(1) | `const empty = queue.isEmpty(); // false` |
-| size | Returns the number of elements in the queue. | The number of elements | O(1) | `const length = queue.size(); // 1` |
+| size | Returns the number of elements in the queue. | The number of elements | O(1) | `const length = queue.size(); // 2` |
 | clear | Removes all elements from the queue and resets it to an empty state. | The queue instance (this) | O(1) | `queue.clear();` |
-| toArray | Converts the queue to an array of elements. | An array of elements | O(n) | `const array = queue.toArray(); // [2]` |
+| toArray | Converts the queue to an array of elements. | An array of elements | O(n) | `const array = queue.toArray(); // [2, 'text', { key: 'value' }]` |
 | getType | Returns the type of data structure. | "queue" | O(1) | `const type = queue.getType(); // "queue"` |
 
 ## Custom Console Logging
@@ -43,12 +42,12 @@ The `console.log` method has been customized to properly handle and format `Queu
 ```jsx
 import Queue from 'queue-list';
 
-const queue = new Queue(10, 20, 30);
+const queue = new Queue(10, 'text', { key: 'value' });
 
-console.log(queue); // Output: Front -> |10| |20| |30| <- Rear
+console.log(queue); // Output: Front -> |10| |text| |[object Object]| <- Rear
 
 queue.dequeue();
-console.log(queue); // Output: Front -> |20| |30| <- Rear
+console.log(queue); // Output: Front -> |text| |[object Object]| <- Rear
 
 queue.clear();
 console.log(queue); // Output: Front -> || <- Rear
@@ -65,9 +64,9 @@ console.log(queue); // Output: Front -> || <- Rear
 ```jsx
 import Queue from 'queue-list';
 
-const queue = new Queue(1, 2, 3);
-queue.enqueue(4).enqueue(5);
-console.log(queue); // Output: "Front -> |1| |2| |3| |4| |5| <- Rear"
+const queue = new Queue(1, 'string', true, [1, 2], { key: 'value' });
+queue.enqueue(null).enqueue(undefined);
+console.log(queue); // Output: "Front -> |1| |string| |true| |[1,2]| |[object Object]| |null| |undefined| <- Rear"
 ```
 
 **Edge Cases:**
@@ -76,16 +75,16 @@ console.log(queue); // Output: "Front -> |1| |2| |3| |4| |5| <- Rear"
 
 ```jsx
 const queue = new Queue();
-queue.enqueue(10);
-console.log(queue); // Output: "Front -> |10| <- Rear"
+queue.enqueue(10).enqueue('text').enqueue([1, 2, 3]).enqueue({ key: 'value' });
+console.log(queue); // Output: "Front -> |10| |text| |[1,2,3]| |[object Object]| <- Rear"
 ```
 
 2. **Enqueue on a non-empty queue:**
 
 ```jsx
-const queue = new Queue(1, 2);
-queue.enqueue(3);
-console.log(queue); // Output: "Front -> |1| |2| |3| <- Rear"
+const queue = new Queue('initial');
+queue.enqueue(42).enqueue({ foo: 'bar' }).enqueue([1, 2]);
+console.log(queue); // Output: "Front -> |initial| |42| |[object Object]| |[1,2]| <- Rear"
 ```
 
 ## `dequeue()`
@@ -97,9 +96,9 @@ console.log(queue); // Output: "Front -> |1| |2| |3| <- Rear"
 ```jsx
 import Queue from 'queue-list';
 
-const queue = new Queue(1, 2, 3);
+const queue = new Queue(1, 'text', { key: 'value' });
 console.log(queue.dequeue()); // Output: 1
-console.log(queue); // Output: "Front -> |2| |3| <- Rear"
+console.log(queue); // Output: "Front -> |text| |[object Object]| <- Rear"
 ```
 
 **Edge Cases:**
@@ -114,9 +113,9 @@ console.log(queue.dequeue()); // Output: null
 2. **Dequeue until the queue is empty:**
 
 ```jsx
-const queue = new Queue(1, 2);
-console.log(queue.dequeue()); // Output: 1
-console.log(queue.dequeue()); // Output: 2
+const queue = new Queue('item1', 'item2');
+console.log(queue.dequeue()); // Output: 'item1'
+console.log(queue.dequeue()); // Output: 'item2'
 console.log(queue.dequeue()); // Output: null
 ```
 
@@ -129,8 +128,8 @@ console.log(queue.dequeue()); // Output: null
 ```jsx
 import Queue from 'queue-list';
 
-const queue = new Queue(10, 20, 30);
-console.log(queue.peek()); // Output: 10
+const queue = new Queue('first', 42, { key: 'value' });
+console.log(queue.peek()); // Output: 'first'
 ```
 
 **Edge Cases:**
@@ -145,9 +144,9 @@ console.log(queue.peek()); // Output: null
 2. **Peek after several enqueues and dequeues:**
 
 ```jsx
-const queue = new Queue(1, 2, 3);
-queue.dequeue(); // Removes 1
-console.log(queue.peek()); // Output: 2
+const queue = new Queue('item1', 'item2', 'item3');
+queue.dequeue(); // Removes 'item1'
+console.log(queue.peek()); // Output: 'item2'
 ```
 
 ## `isEmpty()`
@@ -159,8 +158,9 @@ console.log(queue.peek()); // Output: 2
 ```jsx
 import Queue from 'queue-list';
 
-const queue = new Queue(1);
+const queue = new Queue(1, 'text');
 console.log(queue.isEmpty()); // Output: false
+queue.dequeue();
 queue.dequeue();
 console.log(queue.isEmpty()); // Output: true
 ```
@@ -178,7 +178,7 @@ console.log(queue.isEmpty()); // Output: true
 
 ```jsx
 const queue = new Queue();
-queue.enqueue(5);
+queue.enqueue('data');
 console.log(queue.isEmpty()); // Output: false
 queue.dequeue();
 console.log(queue.isEmpty()); // Output: true
@@ -193,8 +193,8 @@ console.log(queue.isEmpty()); // Output: true
 ```jsx
 import Queue from 'queue-list';
 
-const queue = new Queue(1, 2, 3);
-console.log(queue.size()); // Output: 3
+const queue = new Queue(1, 'text', [1, 2], { key: 'value' });
+console.log(queue.size()); // Output: 4
 ```
 
 **Edge Cases:**
@@ -209,7 +209,8 @@ console.log(queue.size()); // Output: 0
 2. **Size after several operations:**
 
 ```jsx
-const queue = new Queue(10, 20);
+const queue = new Queue('start');
+queue.enqueue('middle');
 queue.dequeue();
 console.log(queue.size()); // Output: 1
 ```
@@ -223,7 +224,7 @@ console.log(queue.size()); // Output: 1
 ```jsx
 import Queue from 'queue-list';
 
-const queue = new Queue(1, 2, 3);
+const queue = new Queue(1, 'text', [1, 2]);
 queue.clear();
 console.log(queue); // Output: "Front -> || <- Rear"
 console.log(queue.isEmpty()); // Output: true
@@ -242,7 +243,7 @@ console.log(queue); // Output: "Front -> || <- Rear"
 2. **Clear a queue with elements:**
 
 ```jsx
-const queue = new Queue(5, 6);
+const queue = new Queue('item1', 'item2');
 queue.clear();
 console.log(queue.size()); // Output: 0
 ```
@@ -256,8 +257,8 @@ console.log(queue.size()); // Output: 0
 ```jsx
 import Queue from 'queue-list';
 
-const queue = new Queue(1, 2, 3);
-console.log(queue.toArray()); // Output: [1, 2, 3]
+const queue = new Queue(1, 'text', [1, 2], { key: 'value' });
+console.log(queue.toArray()); // Output: [1, 'text', [1, 2], { key: 'value' }]
 ```
 
 **Edge Cases:**
@@ -269,11 +270,11 @@ const queue = new Queue();
 console.log(queue.toArray()); // Output: []
 ```
 
-2. **Convert a queue with multiple elements:**
+2. **Convert a queue with various elements:**
 
 ```jsx
-const queue = new Queue('a', 'b', 'c');
-console.log(queue.toArray()); // Output: ['a', 'b', 'c']
+const queue = new Queue('string', 42, { foo: 'bar' }, [1, 2]);
+console.log(queue.toArray()); // Output: ['string', 42, { foo: 'bar' }, [1, 2]]
 ```
 
 ### `getType()`
@@ -295,22 +296,24 @@ console.log(queue.getType()); // Output: "queue"
 
 ```jsx
 const queue = new Queue();
-console.log(queue.getType()); // Output: "queue"
+console.log(queue.getType
+
+()); // Output: "queue"
 ```
 
 2. **Type after various operations:**
 
 ```jsx
 const queue = new Queue();
-queue.enqueue(1);
+queue.enqueue('element');
 console.log(queue.getType()); // Output: "queue"
 ```
 
-# License
+## License
 
 This project is licensed under the MIT License - see the LICENSE.md file for details.
 
-# Acknowledgments
+## Acknowledgments
 
 This package is inspired by the need for a simple and efficient queue implementation in JavaScript. Feel free to use and contribute to make this package even better! If you encounter any issues or have suggestions for improvement, please open an issue on the GitHub repository.
 
