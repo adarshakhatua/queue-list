@@ -77,7 +77,7 @@ console.log(queue); // Output: "Front -> |1| |2| |3| |4| |5| <- Rear"
 ```jsx
 const queue = new Queue();
 queue.enqueue(10);
-console.log(queue.toString()); // Output: "Front -> |10| <- Rear"
+console.log(queue); // Output: "Front -> |10| <- Rear"
 ```
 
 2. **Enqueue on a non-empty queue:**
@@ -85,7 +85,7 @@ console.log(queue.toString()); // Output: "Front -> |10| <- Rear"
 ```jsx
 const queue = new Queue(1, 2);
 queue.enqueue(3);
-console.log(queue.toString()); // Output: "Front -> |1| |2| |3| <- Rear"
+console.log(queue); // Output: "Front -> |1| |2| |3| <- Rear"
 ```
 
 ## `dequeue()`
@@ -99,7 +99,7 @@ import Queue from 'queue-list';
 
 const queue = new Queue(1, 2, 3);
 console.log(queue.dequeue()); // Output: 1
-console.log(queue.toString()); // Output: "Front -> |2| |3| <- Rear"
+console.log(queue); // Output: "Front -> |2| |3| <- Rear"
 ```
 
 **Edge Cases:**
@@ -225,7 +225,7 @@ import Queue from 'queue-list';
 
 const queue = new Queue(1, 2, 3);
 queue.clear();
-console.log(queue.toString()); // Output: "Front -> || <- Rear"
+console.log(queue); // Output: "Front -> || <- Rear"
 console.log(queue.isEmpty()); // Output: true
 ```
 
@@ -236,7 +236,7 @@ console.log(queue.isEmpty()); // Output: true
 ```jsx
 const queue = new Queue();
 queue.clear();
-console.log(queue.toString()); // Output: "Front -> || <- Rear"
+console.log(queue); // Output: "Front -> || <- Rear"
 ```
 
 2. **Clear a queue with elements:**
