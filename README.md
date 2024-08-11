@@ -42,12 +42,12 @@ The `console.log` method has been customized to properly handle and format `Queu
 ```jsx
 import Queue from 'queue-list';
 
-const queue = new Queue(10, 'text', { key: 'value' });
+const queue = new Queue(10, "text", { key: 'value' });
 
-console.log(queue); // Output: Front -> |10| |text| |{"key":"value"}| <- Rear
+console.log(queue); // Output: Front -> |10| |"text"| |{"key":"value"}| <- Rear
 
 queue.dequeue();
-console.log(queue); // Output: Front -> |text| |{"key":"value"}| <- Rear
+console.log(queue); // Output: Front -> |"text"| |{"key":"value"}| <- Rear
 
 queue.clear();
 console.log(queue); // Output: Front -> || <- Rear
@@ -64,9 +64,9 @@ console.log(queue); // Output: Front -> || <- Rear
 ```jsx
 import Queue from 'queue-list';
 
-const queue = new Queue(1, 'string', true, [1, 2], { key: 'value' });
+const queue = new Queue(1, "string", true, [1, 2], { key: 'value' });
 queue.enqueue(null).enqueue(undefined);
-console.log(queue); // Output: "Front -> |1| |string| |true| |[1,2]| |{"key":"value"}| |null| |undefined| <- Rear"
+console.log(queue); // Output: "Front -> |1| |"string"| |true| |[1,2]| |{"key":"value"}| |null| |undefined| <- Rear"
 ```
 
 **Edge Cases:**
@@ -75,8 +75,8 @@ console.log(queue); // Output: "Front -> |1| |string| |true| |[1,2]| |{"key":"va
 
 ```jsx
 const queue = new Queue();
-queue.enqueue(10).enqueue('text').enqueue([1, 2, 3]).enqueue({ key: 'value' });
-console.log(queue); // Output: "Front -> |10| |text| |[1,2,3]| |{"key":"value"}| <- Rear"
+queue.enqueue(10).enqueue("text").enqueue([1, 2, 3]).enqueue({ key: 'value' });
+console.log(queue); // Output: "Front -> |10| |"text"| |[1,2,3]| |{"key":"value"}| <- Rear"
 ```
 
 2. **Enqueue on a non-empty queue:**
@@ -84,7 +84,7 @@ console.log(queue); // Output: "Front -> |10| |text| |[1,2,3]| |{"key":"value"}|
 ```jsx
 const queue = new Queue('initial');
 queue.enqueue(42).enqueue({ foo: 'bar' }).enqueue([1, 2]);
-console.log(queue); // Output: "Front -> |initial| |42| |{"foo":"bar"}| |[1,2]| <- Rear"
+console.log(queue); // Output: "Front -> |'initial'| |42| |{"foo":"bar"}| |[1,2]| <- Rear"
 ```
 
 ## `dequeue()`
@@ -98,7 +98,7 @@ import Queue from 'queue-list';
 
 const queue = new Queue(1, 'text', { key: 'value' });
 console.log(queue.dequeue()); // Output: 1
-console.log(queue); // Output: "Front -> |text| |{"key":"value"}| <- Rear"
+console.log(queue); // Output: "Front -> |'text'| |{"key":"value"}| <- Rear"
 ```
 
 **Edge Cases:**
@@ -258,7 +258,7 @@ console.log(queue.size()); // Output: 0
 import Queue from 'queue-list';
 
 const queue = new Queue(1, 'text', [1, 2], { key: 'value' });
-console.log(queue.toArray()); // Output: [1, 'text', '[1,2]', '{"key":"value"}']
+console.log(queue.toArray()); // Output: [1, 'text', [1,2], {"key":"value"}]
 ```
 
 **Edge Cases:**
@@ -274,7 +274,7 @@ console.log(queue.toArray()); // Output: []
 
 ```jsx
 const queue = new Queue('string', 42, { foo: 'bar' }, [1, 2]);
-console.log(queue.toArray()); // Output: ['string', 42, '{"foo":"bar"}', '[1,2]']
+console.log(queue.toArray()); // Output: [ 'string', 42, { foo: 'bar' }, [ 1, 2 ] ]
 ```
 
 ### `getType()`
