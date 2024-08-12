@@ -1,7 +1,5 @@
 # queue-list
 
-## Overview
-
 #### 👉Note: All methods including `enqueue`, `dequeue`, `peek`, `isEmpty`, `size`, and `clear` have constant time complexity 😎 O(1)
 
 `queue-list` is a JavaScript library for managing a queue data structure. It provides a simple and efficient way to handle elements in a queue with various methods for manipulating and querying the queue. The library also customizes `console.log` to format `Queue` instances.
@@ -19,25 +17,84 @@ npm install queue-list
 ```jsx
 import Queue from 'queue-list';
 ```
+<h2>Methods</h2>
+<div style="overflow-x: auto;">
+<table style="width: max-content; font-size: 13px; border-collapse: collapse; border: 1px solid #ddd;">
+  <thead>
+    <tr>
+      <th style="border: 1px solid #ddd; padding: 8px;">Method</th>
+      <th style="border: 1px solid #ddd; padding: 8px;">Purpose</th>
+      <th style="border: 1px solid #ddd; padding: 8px;">Returns</th>
+      <th style="border: 1px solid #ddd; padding: 8px;">Time Complexity</th>
+      <th style="border: 1px solid #ddd; padding: 8px;">Example Use Case</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="border: 1px solid #ddd; padding: 8px;">enqueue</td>
+      <td style="border: 1px solid #ddd; padding: 8px;">Adds a new element to the end of the queue.</td>
+      <td style="border: 1px solid #ddd; padding: 8px;">The queue instance (this)</td>
+      <td style="border: 1px solid #ddd; padding: 8px;">O(1)</td>
+      <td style="border: 1px solid #ddd; padding: 8px;"><code>queue.enqueue(1).enqueue('text').enqueue({ key: 'value' });</code></td>
+    </tr>
+    <tr>
+      <td style="border: 1px solid #ddd; padding: 8px;">dequeue</td>
+      <td style="border: 1px solid #ddd; padding: 8px;">Removes and returns the element at the front of the queue.</td>
+      <td style="border: 1px solid #ddd; padding: 8px;">The removed element or null if empty</td>
+      <td style="border: 1px solid #ddd; padding: 8px;">O(1)</td>
+      <td style="border: 1px solid #ddd; padding: 8px;"><code>const value = queue.dequeue(); // 1</code></td>
+    </tr>
+    <tr>
+      <td style="border: 1px solid #ddd; padding: 8px;">peek</td>
+      <td style="border: 1px solid #ddd; padding: 8px;">Returns the value of the front element without removing it.</td>
+      <td style="border: 1px solid #ddd; padding: 8px;">The front element or null if empty</td>
+      <td style="border: 1px solid #ddd; padding: 8px;">O(1)</td>
+      <td style="border: 1px solid #ddd; padding: 8px;"><code>const front = queue.peek(); // 'text'</code></td>
+    </tr>
+    <tr>
+      <td style="border: 1px solid #ddd; padding: 8px;">isEmpty</td>
+      <td style="border: 1px solid #ddd; padding: 8px;">Checks if the queue is empty.</td>
+      <td style="border: 1px solid #ddd; padding: 8px;"><code>true</code> if empty, <code>false</code> otherwise</td>
+      <td style="border: 1px solid #ddd; padding: 8px;">O(1)</td>
+      <td style="border: 1px solid #ddd; padding: 8px;"><code>const empty = queue.isEmpty(); // false</code></td>
+    </tr>
+    <tr>
+      <td style="border: 1px solid #ddd; padding: 8px;">size</td>
+      <td style="border: 1px solid #ddd; padding: 8px;">Returns the number of elements in the queue.</td>
+      <td style="border: 1px solid #ddd; padding: 8px;">The number of elements</td>
+      <td style="border: 1px solid #ddd; padding: 8px;">O(1)</td>
+      <td style="border: 1px solid #ddd; padding: 8px;"><code>const length = queue.size(); // 2</code></td>
+    </tr>
+    <tr>
+      <td style="border: 1px solid #ddd; padding: 8px;">clear</td>
+      <td style="border: 1px solid #ddd; padding: 8px;">Removes all elements from the queue and resets it to an empty state.</td>
+      <td style="border: 1px solid #ddd; padding: 8px;">The queue instance (this)</td>
+      <td style="border: 1px solid #ddd; padding: 8px;">O(1)</td>
+      <td style="border: 1px solid #ddd; padding: 8px;"><code>queue.clear();</code></td>
+    </tr>
+    <tr>
+      <td style="border: 1px solid #ddd; padding: 8px;">toArray</td>
+      <td style="border: 1px solid #ddd; padding: 8px;">Converts the queue to an array of elements.</td>
+      <td style="border: 1px solid #ddd; padding: 8px;">An array of elements</td>
+      <td style="border: 1px solid #ddd; padding: 8px;">O(n)</td>
+      <td style="border: 1px solid #ddd; padding: 8px;"><code>const array = queue.toArray(); // [1, 'text', '{"key":"value"}']</code></td>
+    </tr>
+    <tr>
+      <td style="border: 1px solid #ddd; padding: 8px;">getType</td>
+      <td style="border: 1px solid #ddd; padding: 8px;">Returns the type of data structure.</td>
+      <td style="border: 1px solid #ddd; padding: 8px;">"queue"</td>
+      <td style="border: 1px solid #ddd; padding: 8px;">O(1)</td>
+      <td style="border: 1px solid #ddd; padding: 8px;"><code>const type = queue.getType(); // "queue"</code></td>
+    </tr>
+  </tbody>
+</table>
+</div>
 
-## Methods
-
-| Method | Purpose | Returns | Time Complexity | Example Use Case |
-| --- | --- | --- | --- | --- |
-| enqueue | Adds a new element to the end of the queue. | The queue instance (this) | O(1) | `queue.enqueue(1).enqueue('text').enqueue({ key: 'value' });` |
-| dequeue | Removes and returns the element at the front of the queue. | The removed element or null if empty | O(1) | `const value = queue.dequeue(); // 1` |
-| peek | Returns the value of the front element without removing it. | The front element or null if empty | O(1) | `const front = queue.peek(); // 'text'` |
-| isEmpty | Checks if the queue is empty. | `true` if empty, `false` otherwise | O(1) | `const empty = queue.isEmpty(); // false` |
-| size | Returns the number of elements in the queue. | The number of elements | O(1) | `const length = queue.size(); // 2` |
-| clear | Removes all elements from the queue and resets it to an empty state. | The queue instance (this) | O(1) | `queue.clear();` |
-| toArray | Converts the queue to an array of elements. | An array of elements | O(n) | `const array = queue.toArray(); // [1, 'text', '{"key":"value"}']` |
-| getType | Returns the type of data structure. | "queue" | O(1) | `const type = queue.getType(); // "queue"` |
-
-## Custom Console Logging
+### Custom Console Logging
 
 The `console.log` method has been customized to properly handle and format `Queue` instances. When logging a `Queue` instance, its `toString` representation will be used.
 
-### Custom Console Log Example
+##### Example
 
 ```jsx
 import Queue from 'queue-list';
@@ -55,9 +112,9 @@ console.log(queue); // Output: Front -> || <- Rear
 
 ## Detailed Example Use Cases
 
-## `enqueue(value)`
+### `enqueue(value)`
 
-**Purpose:** Adds a new element to the end of the queue.
+ **Purpose:** Adds a new element to the end of the queue.
 
 **Typical Use Case:**
 
@@ -87,7 +144,7 @@ queue.enqueue(42).enqueue({ foo: 'bar' }).enqueue([1, 2]);
 console.log(queue); // Output: "Front -> |'initial'| |42| |{"foo":"bar"}| |[1,2]| <- Rear"
 ```
 
-## `dequeue()`
+### `dequeue()`
 
 **Purpose:** Removes and returns the element at the front of the queue. Returns `null` if the queue is empty.
 
@@ -119,7 +176,7 @@ console.log(queue.dequeue()); // Output: 'item2'
 console.log(queue.dequeue()); // Output: null
 ```
 
-## `peek()`
+### `peek()`
 
 **Purpose:** Returns the value of the front element without removing it. Returns `null` if the queue is empty.
 
@@ -149,7 +206,7 @@ queue.dequeue(); // Removes 'item1'
 console.log(queue.peek()); // Output: 'item2'
 ```
 
-## `isEmpty()`
+### `isEmpty()`
 
 **Purpose:** Checks if the queue is empty.
 
@@ -184,7 +241,7 @@ queue.dequeue();
 console.log(queue.isEmpty()); // Output: true
 ```
 
-## `size()`
+### `size()`
 
 **Purpose:** Returns the number of elements in the queue.
 
@@ -215,7 +272,7 @@ queue.dequeue();
 console.log(queue.size()); // Output: 1
 ```
 
-## `clear()`
+### `clear()`
 
 **Purpose:** Removes all elements from the queue and resets it to an empty state.
 
@@ -248,7 +305,7 @@ queue.clear();
 console.log(queue.size()); // Output: 0
 ```
 
-## `toArray()`
+### `toArray()`
 
 **Purpose:** Converts the queue to an array of elements.
 
