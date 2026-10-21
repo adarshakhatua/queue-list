@@ -1,7 +1,7 @@
 # queue-list
 
-A small, dependency-free FIFO queue for JavaScript, implemented as a singly linked list.
-`enqueue`, `dequeue`, `peek`, `isEmpty`, `size` and `clear` are all **O(1)**; `toArray` and iteration are O(n).
+A small, dependency-free FIFO queue for JavaScript, implemented as a growable circular buffer.
+`enqueue` and `dequeue` are **amortized O(1)**; `peek`, `isEmpty`, `size` and `clear` are **O(1)**; `toArray` and iteration are O(n).
 Importing the package has **no side effects** (no global patching).
 
 ```sh
@@ -40,8 +40,8 @@ Queue.from([1, 2, 3]);                // build from any iterable
 |---|---|---|---|
 | `new Queue(...values)` | Create a queue, optionally with initial items | `Queue` | O(n) |
 | `Queue.from(iterable)` | Create a queue from an array, Set, generator, ... | `Queue` | O(n) |
-| `enqueue(value)` | Add to the rear | the queue (chainable) | O(1) |
-| `dequeue()` | Remove and return the front item | item, or `null` if empty | O(1) |
+| `enqueue(value)` | Add to the rear | the queue (chainable) | O(1) amortized |
+| `dequeue()` | Remove and return the front item | item, or `null` if empty | O(1) amortized |
 | `peek()` | Return the front item without removing it | item, or `null` if empty | O(1) |
 | `isEmpty()` | Is the queue empty? | `boolean` | O(1) |
 | `size()` / `length` | Number of items | `number` | O(1) |

@@ -111,6 +111,62 @@ test("breaking out of drain leaves the rest in the queue", () => {
   assert.deepEqual(q.toArray(), [3, 4]);
 });
 
+test("matches an array model across growth, wraparound and shrinking", () => {
+  const q = new Queue();
+  const model = [];
+  let next = 0;
+  let seed = 12345; // deterministic LCG so failures are reproducible
+  const rand = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 2 ** 32;
+  for (let step = 0; step < 50_000; step++) {
+    // bias flips over time so the queue repeatedly grows large and drains
+    const enqueueBias = Math.floor(step / 5000) % 2 === 0 ? 0.7 : 0.3;
+    if (rand() < enqueueBias) {
+      q.enqueue(next);
+      model.push(next++);
+    } else {
+      assert.equal(q.dequeue(), model.length ? model.shift() : null);
+    }
+    assert.equal(q.size(), model.length);
+    assert.equal(q.peek(), model.length ? model[0] : null);
+  }
+  assert.deepEqual(q.toArray(), model);
+});
+
+test("dequeued items are not retained", () => {
+  const q = new Queue({ a: 1 }, { b: 2 });
+  q.dequeue();
+  q.dequeue();
+  assert.deepEqual(q.toArray(), []);
+  assert.equal(q.peek(), null);
+});
+
+test("iterating while the queue changes never skips or repeats items", () => {
+  const q = Queue.from([1, 2, 3]);
+  const seen = [];
+  for (const v of q) {
+    seen.push(v);
+    if (v === 1) q.dequeue(); // remove the item being visited
+    if (v === 2) q.enqueue(4); // append while iterating
+  }
+  assert.deepEqual(seen, [1, 2, 3, 4]);
+
+  const big = Queue.from(Array.from({ length: 100 }, (_, i) => i));
+  const visited = [];
+  for (const v of big) {
+    visited.push(v);
+    if (v === 10) for (let i = 0; i < 100; i++) big.enqueue(100 + i); // forces growth
+  }
+  assert.deepEqual(visited, Array.from({ length: 200 }, (_, i) => i));
+
+  const cleared = Queue.from([1, 2, 3]);
+  const afterClear = [];
+  for (const v of cleared) {
+    afterClear.push(v);
+    cleared.clear();
+  }
+  assert.deepEqual(afterClear, [1]);
+});
+
 test("toString / inspect formatting", () => {
   const q = new Queue(10, "text", { key: "value" });
   assert.equal(q.toString(), 'Front -> |10| |"text"| |{"key":"value"}| <- Rear');

@@ -1,7 +1,7 @@
 {
   "name": "queue-list",
   "version": "2.0.0",
-  "description": "A fast, dependency-free FIFO queue (linked list) for JavaScript with O(1) enqueue/dequeue, iteration support and TypeScript types",
+  "description": "A fast, dependency-free FIFO queue (circular buffer) for JavaScript with O(1) enqueue/dequeue, iteration support and TypeScript types",
   "type": "module",
   "sideEffects": false,
   "main": "index.js",
@@ -27,7 +27,7 @@
   "keywords": [
     "queue",
     "fifo",
-    "linked-list",
+    "ring-buffer",
     "data-structure",
     "javascript"
   ],
