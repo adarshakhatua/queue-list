@@ -191,3 +191,47 @@ test("many cancelled waits do not accumulate", async () => {
   q.enqueue("only");
   assert.equal(q.size(), 1, "no stale waiter consumed the item");
 });
+
+test("iterate() behaves like for await on the queue", async () => {
+  const q = AsyncQueue.from([1, 2]);
+  q.close();
+  const seen = [];
+  for await (const v of q.iterate()) seen.push(v);
+  assert.deepEqual(seen, [1, 2]);
+});
+
+test("iterate({ signal }) throws the abort reason while waiting and loses nothing", async () => {
+  const q = AsyncQueue.from([1]);
+  const ctrl = new AbortController();
+  const seen = [];
+  const reason = new Error("stop");
+  const loop = (async () => {
+    for await (const v of q.iterate({ signal: ctrl.signal })) seen.push(v);
+  })();
+  await tick(); // consumer took 1 and is now waiting for more
+  ctrl.abort(reason);
+  await assert.rejects(loop, (error) => error === reason);
+  assert.deepEqual(seen, [1]);
+  q.enqueue(2);
+  assert.equal(await q.take(), 2, "an item enqueued after the abort is still available");
+});
+
+test("iterate({ signal }) with an already-aborted signal takes nothing", async () => {
+  const q = AsyncQueue.from([1, 2]);
+  const ctrl = new AbortController();
+  ctrl.abort();
+  await assert.rejects(async () => {
+    for await (const _ of q.iterate({ signal: ctrl.signal })); // eslint-disable-line no-unused-vars
+  }, { name: "AbortError" });
+  assert.equal(q.size(), 2);
+});
+
+test("iterate({ signal }) ends normally if the queue closes before an abort", async () => {
+  const q = AsyncQueue.from([1]);
+  const ctrl = new AbortController();
+  setTimeout(() => q.close(), 5);
+  const seen = [];
+  for await (const v of q.iterate({ signal: ctrl.signal })) seen.push(v);
+  assert.deepEqual(seen, [1]);
+  assert.equal(getEventListeners(ctrl.signal, "abort").length, 0);
+});

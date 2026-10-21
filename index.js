@@ -80,6 +80,39 @@ class Queue {
     return this.#size === 0 ? null : this.#buf[this.#head];
   }
 
+  /** Returns the rear item (the most recently enqueued) without removing it, or null if empty. */
+  peekLast() {
+    return this.#size === 0 ? null : this.#buf[(this.#head + this.#size - 1) & this.#mask];
+  }
+
+  /**
+   * Returns the item at `index` (0 is the front; negative counts from the rear, like Array#at),
+   * or undefined if out of range. Unlike peek(), a miss is undefined so it can't be confused
+   * with a stored null.
+   */
+  at(index) {
+    let i = Math.trunc(index) || 0;
+    if (i < 0) i += this.#size;
+    if (i < 0 || i >= this.#size) return undefined;
+    return this.#buf[(this.#head + i) & this.#mask];
+  }
+
+  /** Adds every item of an iterable to the rear, in order. Returns the queue for chaining. */
+  enqueueAll(iterable) {
+    // enqueueing a queue into itself would otherwise never finish
+    for (const value of iterable === this ? this.toArray() : iterable) this.enqueue(value);
+    return this;
+  }
+
+  /** Removes and returns up to `count` items from the front as an array (fewer if the queue is smaller). */
+  dequeueMany(count) {
+    if (!(count >= 0)) throw new RangeError("count must be a non-negative number");
+    const n = Math.min(Math.floor(count), this.#size);
+    const out = new Array(n);
+    for (let i = 0; i < n; i++) out[i] = this.dequeue();
+    return out;
+  }
+
   isEmpty() {
     return this.#size === 0;
   }
@@ -242,18 +275,28 @@ class AsyncQueue {
     return this;
   }
 
-  /** `for await (const item of queue)` takes items until the queue is closed and empty. */
-  async *[Symbol.asyncIterator]() {
+  /**
+   * Takes items until the queue is closed and empty, then finishes normally.
+   * With `signal`, an abort makes the loop throw `signal.reason` instead; no item is
+   * taken after the abort, so nothing is lost.
+   * @param {{ signal?: AbortSignal }} [options]
+   */
+  async *iterate({ signal } = {}) {
     while (true) {
       let item;
       try {
-        item = await this.take();
+        item = await this.take({ signal });
       } catch (error) {
         if (error instanceof QueueClosedError) return;
         throw error;
       }
       yield item;
     }
+  }
+
+  /** `for await (const item of queue)` is the same as `queue.iterate()`. */
+  [Symbol.asyncIterator]() {
+    return this.iterate();
   }
 }
 

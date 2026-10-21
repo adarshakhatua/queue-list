@@ -167,6 +167,84 @@ test("iterating while the queue changes never skips or repeats items", () => {
   assert.deepEqual(afterClear, [1]);
 });
 
+test("peekLast returns the rear item and tracks enqueue/dequeue", () => {
+  const q = new Queue();
+  assert.equal(q.peekLast(), null);
+  q.enqueue(1);
+  assert.equal(q.peekLast(), 1);
+  q.enqueue(2).enqueue(3);
+  assert.equal(q.peekLast(), 3);
+  q.dequeue();
+  assert.equal(q.peekLast(), 3);
+  q.dequeue();
+  q.dequeue();
+  assert.equal(q.peekLast(), null);
+  q.enqueue(null);
+  assert.equal(q.peekLast(), null, "a stored null reads back as null");
+});
+
+test("at: indexing from the front and rear, out of range is undefined", () => {
+  const q = Queue.from(["a", "b", "c"]);
+  assert.equal(q.at(0), "a");
+  assert.equal(q.at(2), "c");
+  assert.equal(q.at(-1), "c");
+  assert.equal(q.at(-3), "a");
+  assert.equal(q.at(3), undefined);
+  assert.equal(q.at(-4), undefined);
+  assert.equal(q.at(1.9), "b", "fractions truncate like Array#at");
+  assert.equal(q.at(NaN), "a");
+  assert.equal(new Queue().at(0), undefined);
+  const withNull = Queue.from([null]);
+  assert.equal(withNull.at(0), null);
+  assert.equal(withNull.at(1), undefined, "undefined tells a miss from a stored null");
+});
+
+test("at and peekLast stay correct after the buffer wraps and grows", () => {
+  const q = new Queue();
+  for (let i = 0; i < 12; i++) q.enqueue(i);
+  for (let i = 0; i < 10; i++) q.dequeue(); // head is now deep into the buffer
+  for (let i = 12; i < 40; i++) q.enqueue(i); // wraps, then grows
+  const expected = Array.from({ length: 30 }, (_, i) => i + 10);
+  assert.deepEqual(Array.from({ length: 30 }, (_, i) => q.at(i)), expected);
+  assert.equal(q.at(-1), 39);
+  assert.equal(q.peekLast(), 39);
+});
+
+test("enqueueAll adds an iterable in order and is chainable", () => {
+  const q = new Queue(1);
+  assert.equal(q.enqueueAll([2, 3]).enqueueAll(new Set([4])), q);
+  q.enqueueAll(function* () { yield 5; }());
+  q.enqueueAll([]);
+  assert.deepEqual(q.toArray(), [1, 2, 3, 4, 5]);
+});
+
+test("enqueueAll(queue itself) terminates and duplicates the contents", () => {
+  const q = Queue.from([1, 2]);
+  q.enqueueAll(q);
+  assert.deepEqual(q.toArray(), [1, 2, 1, 2]);
+});
+
+test("dequeueMany takes up to n items from the front", () => {
+  const q = Queue.from([1, 2, 3, 4, 5]);
+  assert.deepEqual(q.dequeueMany(2), [1, 2]);
+  assert.deepEqual(q.dequeueMany(0), []);
+  assert.deepEqual(q.dequeueMany(10), [3, 4, 5], "fewer when the queue is smaller");
+  assert.deepEqual(q.dequeueMany(3), [], "empty queue gives an empty array");
+  assert.deepEqual(Queue.from([1, 2]).dequeueMany(Infinity), [1, 2]);
+  assert.equal(q.isEmpty(), true);
+  q.enqueue("reused");
+  assert.equal(q.peek(), "reused");
+  assert.deepEqual(Queue.from([null, undefined]).dequeueMany(2), [null, undefined]);
+});
+
+test("dequeueMany rejects invalid counts without changing the queue", () => {
+  const q = Queue.from([1, 2]);
+  assert.throws(() => q.dequeueMany(-1), RangeError);
+  assert.throws(() => q.dequeueMany(NaN), RangeError);
+  assert.throws(() => q.dequeueMany(), RangeError);
+  assert.deepEqual(q.toArray(), [1, 2]);
+});
+
 test("toString / inspect formatting", () => {
   const q = new Queue(10, "text", { key: "value" });
   assert.equal(q.toString(), 'Front -> |10| |"text"| |{"key":"value"}| <- Rear');

@@ -44,8 +44,12 @@ Queue.from([1, 2, 3]);                // build from any iterable
 | `new Queue(...values)` | Create a queue, optionally with initial items | `Queue` | O(n) |
 | `Queue.from(iterable)` | Create a queue from an array, Set, generator, ... | `Queue` | O(n) |
 | `enqueue(value)` | Add to the rear | the queue (chainable) | O(1) amortized |
+| `enqueueAll(iterable)` | Add every item of an iterable to the rear, in order | the queue (chainable) | O(k) |
 | `dequeue()` | Remove and return the front item | item, or `null` if empty | O(1) amortized |
+| `dequeueMany(count)` | Remove up to `count` items from the front (for batching) | `Array` (fewer if the queue is smaller) | O(count) |
 | `peek()` | Return the front item without removing it | item, or `null` if empty | O(1) |
+| `peekLast()` | Return the rear item without removing it | item, or `null` if empty | O(1) |
+| `at(index)` | Item at `index` (0 = front, negative counts from the rear, like `Array#at`) | item, or `undefined` if out of range | O(1) |
 | `isEmpty()` | Is the queue empty? | `boolean` | O(1) |
 | `size()` / `length` | Number of items | `number` | O(1) |
 | `clear()` | Remove all items | the queue (chainable) | O(1) |
@@ -111,7 +115,7 @@ try {
 | `enqueue(value)` | Add an item, or hand it to the longest-waiting consumer. Chainable. Throws `QueueClosedError` if closed |
 | `take({ signal }?)` | `Promise` of the front item; waits if empty. Rejects with `QueueClosedError` once closed and empty. With an `AbortSignal`, aborting rejects with `signal.reason` |
 | `close()` | Stop accepting items and reject waiting consumers. Buffered items can still be taken. Idempotent |
-| `for await (const x of q)` | Takes items until the queue is closed and empty |
+| `for await (const x of q)` / `q.iterate({ signal }?)` | Takes items until the queue is closed and empty. With a `signal`, an abort makes the loop throw `signal.reason`; nothing is taken after the abort |
 | `closed` | `true` after `close()` |
 | `size()` / `length`, `isEmpty()` | Buffered items (waiting consumers are not counted) |
 
