@@ -152,12 +152,55 @@ try {
 | Member | Description |
 |---|---|
 | `new AsyncQueue(...values)` / `AsyncQueue.from(iterable)` | Create a queue, optionally with initial items |
-| `enqueue(value)` | Add an item, or hand it to the longest-waiting consumer. Chainable. Throws `QueueClosedError` if closed |
+| `enqueue(value)` | Add an item, or hand it to the longest-waiting consumer. Chainable. Throws `QueueClosedError` if closed, and `QueueFullError` if a bounded queue is full |
 | `take({ signal }?)` | `Promise` of the front item; waits if empty. Rejects with `QueueClosedError` once closed and empty. With an `AbortSignal`, aborting rejects with `signal.reason` |
 | `close()` | Stop accepting items and reject waiting consumers. Buffered items can still be taken. Idempotent |
 | `for await (const x of q)` / `q.iterate({ signal }?)` | Takes items until the queue is closed and empty. With a `signal`, an abort makes the loop throw `signal.reason`; nothing is taken after the abort |
+| `AsyncQueue.bounded(capacity, iterable?)` | A queue that holds at most `capacity` buffered items (positive integer); see [Backpressure](#backpressure-bounded-queues) |
+| `put(value, { signal }?)` | Like `enqueue`, but waits for space when a bounded queue is full. Rejects with `QueueClosedError` if the queue closes first, or `signal.reason` on abort; the item is then not added |
+| `takeBatch({ max, timeout, signal }?)` | `Promise` of an array: waits for the first item, then takes what is already buffered up to `max`; see [Batching](#batching) |
+| `capacity`, `full` | Maximum buffered items (`Infinity` if unbounded) and whether a bounded queue is full |
 | `closed` | `true` after `close()` |
 | `size()` / `length`, `isEmpty()` | Buffered items (waiting consumers are not counted) |
+
+### Backpressure: bounded queues
+
+Without a limit, a producer that is faster than its consumers grows the queue until memory runs out.
+`AsyncQueue.bounded(capacity)` makes producers wait instead:
+
+```js
+const jobs = AsyncQueue.bounded(100);
+
+// producer: pauses automatically while 100 jobs are waiting
+for (const job of source) await jobs.put(job);
+jobs.close();
+
+// consumers: every take() lets the longest-waiting producer in
+for await (const job of jobs) await handle(job);
+```
+
+- `put()` waits (in arrival order) while the queue holds `capacity` items; `enqueue()` never waits and throws `QueueFullError` instead.
+- Capacity counts buffered items. If a consumer is already waiting, `put()` hands the item straight over.
+- `put(value, { signal })` stops waiting on abort (or `AbortSignal.timeout(ms)`); the item is not added.
+- `close()` rejects producers that are still waiting with `QueueClosedError`; their items are dropped, while items already buffered can still be taken.
+- An unbounded queue (`new AsyncQueue()`) never makes `put()` wait.
+
+### Batching
+
+`takeBatch()` is for work that is cheaper in bulk, such as database inserts or API calls:
+
+```js
+while (true) {
+  const rows = await events.takeBatch({ max: 500, timeout: 100 });   // up to 500 rows, or 100 ms
+  await db.insertMany(rows);
+}
+```
+
+- It waits for the first item, then also takes whatever is already buffered, up to `max` (default: no limit).
+- Without `timeout` the batch ends right there, so a batch is never delayed.
+- With `timeout` (ms) it keeps collecting for that long after the first item, and returns early once `max` items are in hand.
+- On a closed queue it returns what is buffered, then rejects with `QueueClosedError`.
+- Aborting (`signal`) before the first item rejects with `signal.reason`. Once a batch has items, an abort or `close()` ends the wait and returns the partial batch, so no item is lost.
 
 Notes:
 - Stored `null` / `undefined` values are delivered normally; `take()` never confuses them with "empty".

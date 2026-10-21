@@ -2,6 +2,15 @@
 
 All notable changes to this project. Versions follow [semver](https://semver.org).
 
+## 2.6.0
+
+### Added
+- `AsyncQueue.bounded(capacity, iterable?)`, `AsyncQueue#put(value, { signal })`, `capacity` and `full`: backpressure for producers. `put()` waits while a bounded queue is full; `enqueue()` throws the new `QueueFullError` instead.
+- `AsyncQueue#takeBatch({ max, timeout, signal })`: take up to `max` items at once, optionally waiting `timeout` ms for more. An abort or close after the first item returns the partial batch, so nothing is lost.
+
+### Changed
+- `close()` also rejects producers still waiting in `put()` with `QueueClosedError` (their items are not added).
+
 ## 2.5.0
 
 ### Added
