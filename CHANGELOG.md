@@ -2,6 +2,11 @@
 
 All notable changes to this project. Versions follow [semver](https://semver.org).
 
+## 2.5.0
+
+### Added
+- `PriorityQueue`: a binary-heap priority queue with a comparator (`compare(a, b) < 0` comes out first), FIFO order among equal priorities, `PriorityQueue.from` (O(n) heapify), `drain`, `dequeueMany` and non-consuming iteration.
+
 ## 2.4.0
 
 ### Added

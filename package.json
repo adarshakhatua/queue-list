@@ -1,7 +1,7 @@
 {
   "name": "queue-list",
   "version": "2.4.0",
-  "description": "A fast, dependency-free FIFO queue (circular buffer) for JavaScript with O(1) enqueue/dequeue, iteration support and TypeScript types",
+  "description": "Dependency-free queues for JavaScript: a fast FIFO queue, an async queue for producers and consumers, and a priority queue. Iteration, CommonJS and TypeScript types included",
   "type": "module",
   "sideEffects": false,
   "main": "index.cjs",
@@ -41,7 +41,9 @@
     "ring-buffer",
     "data-structure",
     "javascript",
-    "async-queue"
+    "async-queue",
+    "priority-queue",
+    "heap"
   ],
   "author": "Adarsha Khatua",
   "repository": {

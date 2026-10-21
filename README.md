@@ -3,7 +3,8 @@
 [![CI](https://github.com/adarshakhatua/queue-list/actions/workflows/ci.yml/badge.svg)](https://github.com/adarshakhatua/queue-list/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/queue-list)](https://www.npmjs.com/package/queue-list)
 
-A small, dependency-free FIFO queue for JavaScript, implemented as a growable circular buffer.
+Small, dependency-free queues for JavaScript: a FIFO `Queue` (growable circular buffer), an `AsyncQueue` for
+producers and consumers, and a `PriorityQueue` (binary heap with FIFO tie-breaking).
 `enqueue` and `dequeue` are **amortized O(1)**; `peek`, `isEmpty`, `size` and `clear` are **O(1)**; `toArray` and iteration are O(n).
 Importing the package has **no side effects** (no global patching).
 
@@ -75,6 +76,45 @@ If you `break` out of `drain()`, the items not yet yielded stay in the queue.
 In Node.js, `console.log(queue)` prints `Front -> |1| |"text"| <- Rear` through the standard
 `util.inspect.custom` hook. Nothing is patched globally. In browsers use `queue.toString()`
 or `queue.toArray()`.
+
+## PriorityQueue
+
+Dequeues the most important item first. It is a binary heap, so `enqueue` and `dequeue` are O(log n) and
+`peek` is O(1).
+
+```js
+import { PriorityQueue } from "queue-list";
+
+const jobs = new PriorityQueue((a, b) => a.due - b.due);   // smallest `due` first, like Array#sort
+jobs.enqueue({ id: "slow", due: 30 }).enqueue({ id: "now", due: 1 });
+
+jobs.peek();      // { id: "now", due: 1 }
+jobs.dequeue();   // { id: "now", due: 1 }
+for (const job of jobs.drain()) run(job);   // highest priority first, until empty
+
+new PriorityQueue();                        // no comparator: numbers/strings, smallest first
+new PriorityQueue((a, b) => b - a);         // largest first
+PriorityQueue.from([5, 1, 4], (a, b) => a - b);   // heapified in O(n)
+```
+
+**Items with equal priority come out in the order they were enqueued** (FIFO), which `Array#sort`-based
+and many heap implementations do not guarantee.
+
+It has the same method names as `Queue` (`enqueue`, `enqueueAll`, `dequeue`, `dequeueMany`, `peek`, `isEmpty`,
+`size()` / `length`, `clear`, `drain`, `toArray`, iteration, `PriorityQueue.from`) with these differences:
+
+| | `Queue` | `PriorityQueue` |
+|---|---|---|
+| Constructor | `new Queue(...values)` | `new PriorityQueue(compare?)`; add initial items with `PriorityQueue.from(iterable, compare?)` |
+| Order | insertion order | `compare(a, b) < 0` means `a` comes out first (default: ascending with `<` / `>`) |
+| `toArray()` / iteration | O(n), front to rear | O(n log n), in dequeue order; a snapshot, so the queue is not consumed or affected by later changes |
+| `peekLast`, `at(i)` | yes | no (a heap has no meaningful "last" or index) |
+
+Notes:
+- `compare` must be consistent and must not throw; a throwing comparator can leave the heap misordered.
+- Like `dequeue()` on `Queue`, `dequeue()` and `peek()` return `null` when empty, so use `isEmpty()` or `drain()` if you store `null` (your comparator has to handle it).
+- On the author's machine (500k random numbers, Node 26) it is level with `heap-js`, faster than `@datastructures-js/priority-queue`,
+  and slower than `fastpriorityqueue`, which does not keep ties in order. Run your own numbers if it matters.
 
 ## AsyncQueue
 
