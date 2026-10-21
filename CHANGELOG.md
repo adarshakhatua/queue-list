@@ -2,6 +2,11 @@
 
 All notable changes to this project. Versions follow [semver](https://semver.org).
 
+## 2.6.1
+
+### Docs
+- README restructured to lead with the problem: a "Why" section (with `Array#shift()` and memory numbers), a "Which queue do I need?" table, a worker-pool example with backpressure, and a comparison with other packages. No code changes.
+
 ## 2.6.0
 
 ### Added

@@ -3,10 +3,22 @@
 [![CI](https://github.com/adarshakhatua/queue-list/actions/workflows/ci.yml/badge.svg)](https://github.com/adarshakhatua/queue-list/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/queue-list)](https://www.npmjs.com/package/queue-list)
 
-Small, dependency-free queues for JavaScript: a FIFO `Queue` (growable circular buffer), an `AsyncQueue` for
-producers and consumers, and a `PriorityQueue` (binary heap with FIFO tie-breaking).
-`enqueue` and `dequeue` are **amortized O(1)**; `peek`, `isEmpty`, `size` and `clear` are **O(1)**; `toArray` and iteration are O(n).
-Importing the package has **no side effects** (no global patching).
+**Queues for JavaScript and TypeScript that do more than `enqueue` and `dequeue`:** consumers that wait for work,
+producers that slow down when consumers fall behind, batching, and priorities that keep ties in order.
+No dependencies, no side effects, ESM and CommonJS, types included.
+
+## Why
+
+- **`array.shift()` is not a queue.** It is fine for a few thousand items, then it collapses: draining 100,000
+  items took 771 ms with `shift()` and 0.8 ms with `Queue`; draining 1,000,000 took about 78 seconds against 5 ms
+  (Node 26, one run each; see [Performance](#performance)).
+- **Small memory footprint.** Items live in one growable circular buffer instead of one object per item:
+  1M items took 8.4 MB, against 40 MB for a linked list of node objects, and the buffer shrinks after a drain.
+- **The hard parts are built in.** A bare data structure stops at `dequeue()` returning `null`. Real programs also
+  need consumers that wait, backpressure so a fast producer cannot exhaust memory, cancellation, and bulk
+  processing. [`AsyncQueue`](#asyncqueue) covers those and [`PriorityQueue`](#priorityqueue) covers priorities.
+
+## Install
 
 ```sh
 npm install queue-list
@@ -15,15 +27,52 @@ npm install queue-list
 Works with `import` and `require()`, on Node 18+. TypeScript types are included.
 
 ```js
-import Queue, { AsyncQueue } from "queue-list";          // ESM
-const { Queue, AsyncQueue } = require("queue-list");     // CommonJS (named exports only)
+import Queue, { AsyncQueue, PriorityQueue } from "queue-list";          // ESM
+const { Queue, AsyncQueue, PriorityQueue } = require("queue-list");     // CommonJS (named exports only)
 ```
 
 If one part of your app uses `import` and another uses `require()`, you get two separate copies of the
 classes, so `instanceof` checks across them fail. Pick one style for the same package.
 
+## Which queue do I need?
+
+| You need | Use |
+|---|---|
+| Items in, items out, in order | [`Queue`](#queue) |
+| Consumers that **wait** for items (jobs, messages, events) | [`AsyncQueue`](#asyncqueue) |
+| Producers that **slow down** when consumers can't keep up | [`AsyncQueue.bounded(n)`](#backpressure-bounded-queues) |
+| Handle items **in bulk** (database inserts, API calls) | [`takeBatch()`](#batching) |
+| **Most important first** (deadlines, priorities) | [`PriorityQueue`](#priorityqueue) |
+
+## Example: a worker pool with backpressure
+
+Four workers process jobs from a source that may be much faster than they are. The bounded queue pauses the
+producer while 50 jobs are waiting, so memory stays flat no matter how large the source is:
+
 ```js
-import Queue from "queue-list";
+import { AsyncQueue } from "queue-list";
+
+const jobs = AsyncQueue.bounded(50);
+
+const workers = Array.from({ length: 4 }, async () => {
+  for await (const job of jobs) await handle(job);   // waits when the queue is empty
+});
+
+for (const job of source) await jobs.put(job);       // waits when 50 jobs are already queued
+jobs.close();                                        // workers finish what is buffered, then stop
+await Promise.all(workers);
+```
+
+To stop the workers early, for example on `SIGTERM`, pass an `AbortSignal`:
+`jobs.iterate({ signal })` makes each worker's loop throw `signal.reason`, and no job is taken after the abort.
+
+## Queue
+
+A FIFO queue on a growable circular buffer. `enqueue` and `dequeue` are **amortized O(1)**; `peek`, `isEmpty`,
+`size` and `clear` are **O(1)**; `toArray` and iteration are O(n).
+
+```js
+import { Queue } from "queue-list";
 
 const q = new Queue(1, "two");        // initial items, front first
 q.enqueue(3).enqueue({ four: 4 });    // chainable
@@ -38,7 +87,7 @@ for (const item of q.drain()) { /* removes each item as it is yielded */ }
 Queue.from([1, 2, 3]);                // build from any iterable
 ```
 
-## API
+### API
 
 | Method | Description | Returns | Time |
 |---|---|---|---|
@@ -208,9 +257,32 @@ Notes:
 - If you `break` out of `for await`, the remaining items stay in the queue.
 - `take({ signal })` cancels one consumer's wait (timeouts, shutting down a worker) without closing the queue. A cancelled `take()` leaves the line immediately, so it can never swallow an item; an already-aborted signal rejects without taking anything.
 
+## How it compares
+
+| Package | What it is | Versus queue-list |
+|---|---|---|
+| [`denque`](https://www.npmjs.com/package/denque) | Double-ended queue on an array | Level in the benchmark below. It is a deque (add and remove at both ends); queue-list is FIFO-only but adds the async and priority queues |
+| [`yocto-queue`](https://www.npmjs.com/package/yocto-queue) | Tiny queue | About 2-3x slower in the benchmark below; no waiting consumers, backpressure or priorities |
+| [`p-queue`](https://www.npmjs.com/package/p-queue) | Runs promise-returning functions with a concurrency limit | A different job. `p-queue` schedules the work for you; `AsyncQueue` is the queue underneath, so you decide what workers do |
+| [`fastpriorityqueue`](https://www.npmjs.com/package/fastpriorityqueue), [`heap-js`](https://www.npmjs.com/package/heap-js) | Priority queues | `PriorityQueue` is level with `heap-js` and slower than `fastpriorityqueue`, but keeps equal priorities in enqueue order |
+
 ## Performance
 
-Median of 5 runs on Node 26 (Apple silicon), each library in its own process, in ms (lower is better):
+**Versus `Array#shift()`.** Draining an array used as a queue gets dramatically slower as it grows. Time to remove all
+N items, one at a time, from an array (`shift()`) and from a `Queue` (`dequeue()`), after filling both (Node 26,
+Apple silicon, one run each):
+
+| Items | `array.shift()` | `Queue.dequeue()` |
+|---|---|---|
+| 10,000 | 0.3 ms | 1.2 ms |
+| 100,000 | 771 ms | 0.8 ms |
+| 300,000 | 6,973 ms | 6.2 ms |
+| 1,000,000 | 78,479 ms | 4.9 ms |
+
+For small queues a plain array is fine, and faster. The pattern is similar on Node 18 and 22 (1M items on Node 18 took
+about 176 s). This comparison is not part of `npm run bench`, because the 1M case takes over a minute.
+
+**Versus other queue packages.** Median of 5 runs on Node 26 (Apple silicon), each library in its own process, in ms (lower is better):
 
 | Scenario | queue-list | denque | yocto-queue |
 |---|---|---|---|
