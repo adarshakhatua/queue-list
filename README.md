@@ -142,6 +142,7 @@ run `npm run bench` to reproduce. `denque` is a double-ended queue; queue-list i
 ```sh
 npm run build      # regenerate index.cjs / index.d.cts from index.js / index.d.ts (also checked by the tests)
 npm test           # node:test, no dependencies
+npm run test:types # compile the ESM and CommonJS typings against real usage
 npm run bench      # compares against denque and yocto-queue, one process each
 ```
 

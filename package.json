@@ -31,8 +31,9 @@
   "scripts": {
     "build": "node scripts/build-cjs.js",
     "test": "node --test",
+    "test:types": "tsc -p types-test",
     "bench": "node bench.js",
-    "prepublishOnly": "npm run build && npm test"
+    "prepublishOnly": "npm run build && npm test && npm run test:types"
   },
   "keywords": [
     "queue",
@@ -54,6 +55,7 @@
   "license": "MIT",
   "devDependencies": {
     "denque": "^2.1.0",
+    "typescript": "^5.9.3",
     "yocto-queue": "^1.2.2"
   }
 }
