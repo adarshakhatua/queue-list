@@ -175,6 +175,170 @@ class Queue {
   }
 }
 
+const defaultCompare = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
+
+/**
+ * A priority queue (binary heap). Like Array#sort, `compare(a, b) < 0` means `a` comes out first,
+ * so the default order is smallest first and `(a, b) => b - a` gives largest first.
+ * Items that compare equal come out in the order they were enqueued (FIFO).
+ * `compare` must be consistent and must not throw: a throwing comparator can leave the heap misordered.
+ */
+class PriorityQueue {
+  // Parallel arrays form the heap; seqs[i] is the enqueue order, used to break ties FIFO.
+  #values = [];
+  #seqs = [];
+  #nextSeq = 0;
+  #compare;
+
+  /** @param {(a: T, b: T) => number} [compare] defaults to ascending order with < and > */
+  constructor(compare = defaultCompare) {
+    if (typeof compare !== "function") throw new TypeError("compare must be a function");
+    this.#compare = compare;
+  }
+
+  /** Build a priority queue from any iterable (heapified in O(n)). */
+  static from(iterable, compare) {
+    return new PriorityQueue(compare).enqueueAll(iterable);
+  }
+
+  /** Number of items (same as size()). */
+  get length() {
+    return this.#values.length;
+  }
+
+  #before(i, j) {
+    const c = this.#compare(this.#values[i], this.#values[j]);
+    return c < 0 || (c === 0 && this.#seqs[i] < this.#seqs[j]);
+  }
+
+  #swap(i, j) {
+    const v = this.#values[i];
+    this.#values[i] = this.#values[j];
+    this.#values[j] = v;
+    const q = this.#seqs[i];
+    this.#seqs[i] = this.#seqs[j];
+    this.#seqs[j] = q;
+  }
+
+  #siftUp(i) {
+    while (i > 0) {
+      const parent = (i - 1) >> 1;
+      if (!this.#before(i, parent)) return;
+      this.#swap(i, parent);
+      i = parent;
+    }
+  }
+
+  #siftDown(i) {
+    const n = this.#values.length;
+    while (true) {
+      const left = 2 * i + 1;
+      if (left >= n) return;
+      const right = left + 1;
+      const best = right < n && this.#before(right, left) ? right : left;
+      if (!this.#before(best, i)) return;
+      this.#swap(best, i);
+      i = best;
+    }
+  }
+
+  /** Adds an item. Returns the queue for chaining. */
+  enqueue(value) {
+    this.#values.push(value);
+    this.#seqs.push(this.#nextSeq++);
+    this.#siftUp(this.#values.length - 1);
+    return this;
+  }
+
+  /** Adds every item of an iterable, in order. Returns the queue for chaining. */
+  enqueueAll(iterable) {
+    const items = iterable === this ? this.toArray() : iterable;
+    if (this.#values.length === 0) {
+      // empty heap: append everything, then heapify once (O(n) instead of O(n log n))
+      for (const value of items) {
+        this.#values.push(value);
+        this.#seqs.push(this.#nextSeq++);
+      }
+      for (let i = (this.#values.length >> 1) - 1; i >= 0; i--) this.#siftDown(i);
+    } else {
+      for (const value of items) this.enqueue(value);
+    }
+    return this;
+  }
+
+  /** Removes and returns the highest-priority item, or null if the queue is empty. */
+  dequeue() {
+    if (this.#values.length === 0) return null;
+    const top = this.#values[0];
+    const lastValue = this.#values.pop();
+    const lastSeq = this.#seqs.pop();
+    if (this.#values.length > 0) {
+      this.#values[0] = lastValue;
+      this.#seqs[0] = lastSeq;
+      this.#siftDown(0);
+    }
+    return top;
+  }
+
+  /** Removes and returns up to `count` items in priority order (fewer if the queue is smaller). */
+  dequeueMany(count) {
+    if (!(count >= 0)) throw new RangeError("count must be a non-negative number");
+    const n = Math.min(Math.floor(count), this.#values.length);
+    const out = new Array(n);
+    for (let i = 0; i < n; i++) out[i] = this.dequeue();
+    return out;
+  }
+
+  /** Returns the highest-priority item without removing it, or null if empty. */
+  peek() {
+    return this.#values.length === 0 ? null : this.#values[0];
+  }
+
+  isEmpty() {
+    return this.#values.length === 0;
+  }
+
+  size() {
+    return this.#values.length;
+  }
+
+  /** Removes all items. Returns the queue for chaining. */
+  clear() {
+    this.#values = [];
+    this.#seqs = [];
+    return this;
+  }
+
+  /** Copy of the items in the order they would be dequeued. O(n log n); does not consume the queue. */
+  toArray() {
+    return [...this];
+  }
+
+  /** Yields and removes items in priority order until empty (includes items added meanwhile). */
+  *drain() {
+    while (this.#values.length > 0) yield this.dequeue();
+  }
+
+  /** Iterates a snapshot in dequeue order without consuming the queue. */
+  *[Symbol.iterator]() {
+    const copy = new PriorityQueue(this.#compare);
+    copy.#values = this.#values.slice();
+    copy.#seqs = this.#seqs.slice();
+    while (copy.#values.length > 0) yield copy.dequeue();
+  }
+
+  toString() {
+    if (this.#values.length === 0) return "Top -> [] <- Bottom";
+    let out = "Top -> ";
+    for (const value of this) out += `|${format(value)}| `;
+    return out + "<- Bottom";
+  }
+
+  [Symbol.for("nodejs.util.inspect.custom")]() {
+    return this.toString();
+  }
+}
+
 /** Thrown by AsyncQueue when enqueueing to, or taking from, a closed queue. */
 class QueueClosedError extends Error {
   constructor(message = "Queue is closed") {
@@ -301,4 +465,4 @@ class AsyncQueue {
   }
 }
 
-module.exports = { Queue, AsyncQueue, QueueClosedError };
+module.exports = { Queue, AsyncQueue, PriorityQueue, QueueClosedError };

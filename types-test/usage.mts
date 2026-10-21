@@ -1,5 +1,5 @@
 // Compiled (never run) by `npm run test:types` to check the ESM typings.
-import Queue, { AsyncQueue, Queue as Named, QueueClosedError } from "queue-list";
+import Queue, { AsyncQueue, PriorityQueue, Queue as Named, QueueClosedError } from "queue-list";
 
 type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? true : false;
 const assertType = <_T extends true>() => {};
@@ -46,3 +46,24 @@ jobs.enqueue("nope");
 jobs.take({ signal: "stop" });
 
 assertType<Equal<InstanceType<typeof QueueClosedError>["name"], string>>();
+
+// PriorityQueue
+const pq = new PriorityQueue<{ due: number }>((a, b) => a.due - b.due);
+pq.enqueue({ due: 1 }).enqueueAll([{ due: 2 }]);
+assertType<Equal<ReturnType<typeof pq.dequeue>, { due: number } | null>>();
+assertType<Equal<ReturnType<typeof pq.peek>, { due: number } | null>>();
+assertType<Equal<ReturnType<typeof pq.dequeueMany>, { due: number }[]>>();
+assertType<Equal<ReturnType<typeof pq.enqueue>, PriorityQueue<{ due: number }>>>();
+for (const job of pq.drain()) assertType<Equal<typeof job, { due: number }>>();
+for (const job of pq) assertType<Equal<typeof job, { due: number }>>();
+const fromNumbers = PriorityQueue.from([3, 1, 2]);
+assertType<Equal<typeof fromNumbers, PriorityQueue<number>>>();
+const maxFirst = PriorityQueue.from(new Set([1, 2]), (a, b) => b - a);
+assertType<Equal<typeof maxFirst, PriorityQueue<number>>>();
+new PriorityQueue<string>();
+// @ts-expect-error wrong item type
+pq.enqueue({ due: "soon" });
+// @ts-expect-error comparator must return a number
+new PriorityQueue<number>((a, b) => a > b);
+// @ts-expect-error comparator must be a function
+new PriorityQueue<number>(5);

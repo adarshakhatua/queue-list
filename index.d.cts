@@ -27,6 +27,35 @@ export class Queue<T = unknown> implements Iterable<T> {
   getType(): "queue";
   [Symbol.iterator](): IterableIterator<T>;
 }
+export class PriorityQueue<T = unknown> implements Iterable<T> {
+  /**
+   * `compare(a, b) < 0` means `a` is dequeued first (like Array#sort); defaults to ascending
+   * with < and >. Equal items come out in enqueue order. `compare` must not throw.
+   */
+  constructor(compare?: (a: T, b: T) => number);
+  static from<T>(iterable: Iterable<T>, compare?: (a: T, b: T) => number): PriorityQueue<T>;
+  /** Number of items (same as size()). */
+  readonly length: number;
+  enqueue(value: T): this;
+  /** Adds every item of an iterable, in order. */
+  enqueueAll(iterable: Iterable<T>): this;
+  /** Returns null when the queue is empty. Check isEmpty() if you store null. */
+  dequeue(): T | null;
+  /** Removes up to `count` items in priority order (fewer if the queue is smaller). */
+  dequeueMany(count: number): T[];
+  /** Returns null when the queue is empty. */
+  peek(): T | null;
+  isEmpty(): boolean;
+  size(): number;
+  clear(): this;
+  /** Items in dequeue order; O(n log n), does not consume the queue. */
+  toArray(): T[];
+  /** Yields and removes items in priority order until empty. */
+  drain(): IterableIterator<T>;
+  toString(): string;
+  /** Iterates a snapshot in dequeue order without consuming the queue. */
+  [Symbol.iterator](): IterableIterator<T>;
+}
 export class QueueClosedError extends Error {
   constructor(message?: string);
 }

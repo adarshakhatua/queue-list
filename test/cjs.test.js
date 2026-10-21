@@ -14,10 +14,11 @@ test("generated CommonJS files are up to date with index.js / index.d.ts", () =>
 });
 
 test("require('./index.cjs') exposes the named exports and works", () => {
-  const { Queue, AsyncQueue, QueueClosedError } = require("../index.cjs");
+  const { Queue, AsyncQueue, PriorityQueue, QueueClosedError } = require("../index.cjs");
   const q = new Queue(1, 2);
   assert.deepEqual([...q.enqueue(3)], [1, 2, 3]);
   assert.equal(typeof AsyncQueue, "function");
+  assert.deepEqual(PriorityQueue.from([3, 1, 2]).toArray(), [1, 2, 3]);
   assert.equal(new QueueClosedError().name, "QueueClosedError");
   assert.equal(require("../index.cjs").default, undefined, "no default export in CommonJS");
 });

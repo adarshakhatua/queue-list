@@ -17,8 +17,8 @@ const cjs =
   banner +
   replaceOnce(
     esm,
-    "export default Queue;\nexport { Queue, AsyncQueue, QueueClosedError };",
-    "module.exports = { Queue, AsyncQueue, QueueClosedError };",
+    "export default Queue;\nexport { Queue, AsyncQueue, PriorityQueue, QueueClosedError };",
+    "module.exports = { Queue, AsyncQueue, PriorityQueue, QueueClosedError };",
     "index.js",
   );
 
