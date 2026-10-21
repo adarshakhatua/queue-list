@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { getEventListeners } from "node:events";
 import { AsyncQueue, QueueClosedError } from "../index.js";
 
 const tick = () => new Promise((resolve) => setImmediate(resolve));
@@ -103,4 +104,84 @@ test("multiple consumers share the stream without duplicates", async () => {
   const worker = async () => { const got = []; for await (const v of q) got.push(v); return got; };
   const results = (await Promise.all([worker(), worker(), worker()])).flat().sort((a, b) => a - b);
   assert.deepEqual(results, Array.from({ length: 100 }, (_, i) => i));
+});
+
+test("take({ signal }): an already-aborted signal rejects and takes nothing", async () => {
+  const q = new AsyncQueue(1);
+  const ctrl = new AbortController();
+  ctrl.abort();
+  await assert.rejects(q.take({ signal: ctrl.signal }), { name: "AbortError" });
+  assert.equal(q.size(), 1, "buffered item is untouched");
+  assert.equal(await q.take(), 1);
+});
+
+test("take({ signal }): aborting while waiting rejects with the signal reason", async () => {
+  const q = new AsyncQueue();
+  const ctrl = new AbortController();
+  const pending = q.take({ signal: ctrl.signal });
+  const reason = new Error("shutting down");
+  ctrl.abort(reason);
+  await assert.rejects(pending, (error) => error === reason);
+});
+
+test("a cancelled take never swallows a later item", async () => {
+  const q = new AsyncQueue();
+  const ctrl = new AbortController();
+  const cancelled = q.take({ signal: ctrl.signal });
+  ctrl.abort();
+  await assert.rejects(cancelled, { name: "AbortError" });
+  q.enqueue("kept");
+  assert.equal(q.size(), 1, "item is buffered, not handed to the cancelled consumer");
+  assert.equal(await q.take(), "kept");
+});
+
+test("cancelling a middle waiter keeps the others in arrival order", async () => {
+  const q = new AsyncQueue();
+  const ctrl = new AbortController();
+  const a = q.take();
+  const b = q.take({ signal: ctrl.signal });
+  const c = q.take();
+  ctrl.abort();
+  await assert.rejects(b, { name: "AbortError" });
+  q.enqueue(1).enqueue(2);
+  assert.deepEqual([await a, await c], [1, 2]);
+});
+
+test("abort after delivery has no effect and listeners are cleaned up", async () => {
+  const q = new AsyncQueue();
+  const ctrl = new AbortController();
+  const pending = q.take({ signal: ctrl.signal });
+  assert.equal(getEventListeners(ctrl.signal, "abort").length, 1);
+  q.enqueue("done");
+  assert.equal(await pending, "done");
+  assert.equal(getEventListeners(ctrl.signal, "abort").length, 0, "listener removed on delivery");
+  ctrl.abort(); // must not throw or reject anything
+});
+
+test("close removes abort listeners from waiting consumers", async () => {
+  const q = new AsyncQueue();
+  const ctrl = new AbortController();
+  const pending = q.take({ signal: ctrl.signal });
+  q.close();
+  await assert.rejects(pending, QueueClosedError);
+  assert.equal(getEventListeners(ctrl.signal, "abort").length, 0);
+});
+
+test("AbortSignal.timeout gives take a timeout without losing items", async () => {
+  const q = new AsyncQueue();
+  await assert.rejects(q.take({ signal: AbortSignal.timeout(10) }), { name: "TimeoutError" });
+  q.enqueue(1);
+  assert.equal(await q.take({ signal: AbortSignal.timeout(1000) }), 1);
+});
+
+test("many cancelled waits do not accumulate", async () => {
+  const q = new AsyncQueue();
+  for (let i = 0; i < 1000; i++) {
+    const ctrl = new AbortController();
+    const pending = q.take({ signal: ctrl.signal });
+    ctrl.abort();
+    await assert.rejects(pending);
+  }
+  q.enqueue("only");
+  assert.equal(q.size(), 1, "no stale waiter consumed the item");
 });

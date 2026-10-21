@@ -154,10 +154,11 @@ class QueueClosedError extends Error {
  * take() resolves as soon as an item is available; close() ends the stream:
  * buffered items can still be taken, then take() rejects with QueueClosedError
  * and `for await` finishes. Waiting consumers are served in arrival order.
+ * take({ signal }) lets a consumer stop waiting without losing any item.
  */
 class AsyncQueue {
   #items = new Queue();
-  #waiters = new Queue(); // { resolve, reject } of pending take() calls
+  #waiters = new Set(); // pending take() calls in arrival order; Set allows O(1) cancel
   #closed = false;
 
   /** @param {...T} values initial items, front first */
@@ -192,8 +193,13 @@ class AsyncQueue {
   /** Adds an item, or hands it straight to the longest-waiting consumer. Throws if closed. */
   enqueue(value) {
     if (this.#closed) throw new QueueClosedError();
-    if (this.#waiters.isEmpty()) this.#items.enqueue(value);
-    else this.#waiters.dequeue().resolve(value);
+    if (this.#waiters.size === 0) {
+      this.#items.enqueue(value);
+    } else {
+      const waiter = this.#waiters.values().next().value;
+      this.#waiters.delete(waiter);
+      waiter.resolve(value);
+    }
     return this;
   }
 
@@ -201,18 +207,38 @@ class AsyncQueue {
    * Resolves with the front item, waiting for one if the queue is empty.
    * Rejects with QueueClosedError once the queue is closed and empty.
    * Safe for stored null/undefined values.
+   *
+   * With `signal`, an abort rejects with `signal.reason` and removes this call from the
+   * line, so a cancelled take() never receives (and loses) an item. An already-aborted
+   * signal rejects without taking anything.
+   * @param {{ signal?: AbortSignal }} [options]
    */
-  take() {
+  take({ signal } = {}) {
+    if (signal?.aborted) return Promise.reject(signal.reason);
     if (!this.#items.isEmpty()) return Promise.resolve(this.#items.dequeue());
     if (this.#closed) return Promise.reject(new QueueClosedError());
-    return new Promise((resolve, reject) => this.#waiters.enqueue({ resolve, reject }));
+    return new Promise((resolve, reject) => {
+      const stopListening = () => signal?.removeEventListener("abort", onAbort);
+      const waiter = {
+        resolve: (value) => { stopListening(); resolve(value); },
+        reject: (error) => { stopListening(); reject(error); },
+      };
+      const onAbort = () => {
+        this.#waiters.delete(waiter);
+        waiter.reject(signal.reason);
+      };
+      signal?.addEventListener("abort", onAbort, { once: true });
+      this.#waiters.add(waiter);
+    });
   }
 
   /** Stops accepting items and rejects consumers still waiting. Idempotent. */
   close() {
     if (this.#closed) return this;
     this.#closed = true;
-    for (const waiter of this.#waiters.drain()) waiter.reject(new QueueClosedError());
+    const waiters = [...this.#waiters];
+    this.#waiters.clear();
+    for (const waiter of waiters) waiter.reject(new QueueClosedError());
     return this;
   }
 

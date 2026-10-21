@@ -31,8 +31,11 @@ export class AsyncQueue<T = unknown> implements AsyncIterable<T> {
   isEmpty(): boolean;
   /** Throws QueueClosedError if the queue is closed. */
   enqueue(value: T): this;
-  /** Waits for an item; rejects with QueueClosedError once closed and empty. */
-  take(): Promise<T>;
+  /**
+   * Waits for an item; rejects with QueueClosedError once closed and empty.
+   * If `signal` aborts first, rejects with `signal.reason` and takes nothing.
+   */
+  take(options?: { signal?: AbortSignal }): Promise<T>;
   /** Idempotent. Buffered items can still be taken; waiting consumers are rejected. */
   close(): this;
   [Symbol.asyncIterator](): AsyncIterableIterator<T>;

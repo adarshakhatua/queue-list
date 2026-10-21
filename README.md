@@ -93,11 +93,21 @@ jobs.enqueue({ id: 1 }).enqueue({ id: 2 });
 jobs.close();   // no more items; consumers finish what is buffered, then stop
 ```
 
+Wait for a job, but not forever:
+
+```js
+try {
+  const job = await jobs.take({ signal: AbortSignal.timeout(5000) });
+} catch (error) {
+  if (error.name === "TimeoutError") { /* nothing arrived in 5 s; the queue is untouched */ }
+}
+```
+
 | Member | Description |
 |---|---|
 | `new AsyncQueue(...values)` / `AsyncQueue.from(iterable)` | Create a queue, optionally with initial items |
 | `enqueue(value)` | Add an item, or hand it to the longest-waiting consumer. Chainable. Throws `QueueClosedError` if closed |
-| `take()` | `Promise` of the front item; waits if empty. Rejects with `QueueClosedError` once closed and empty |
+| `take({ signal }?)` | `Promise` of the front item; waits if empty. Rejects with `QueueClosedError` once closed and empty. With an `AbortSignal`, aborting rejects with `signal.reason` |
 | `close()` | Stop accepting items and reject waiting consumers. Buffered items can still be taken. Idempotent |
 | `for await (const x of q)` | Takes items until the queue is closed and empty |
 | `closed` | `true` after `close()` |
@@ -107,7 +117,7 @@ Notes:
 - Stored `null` / `undefined` values are delivered normally; `take()` never confuses them with "empty".
 - Several consumers can share one queue; each item goes to exactly one of them, and waiting consumers are served in arrival order.
 - If you `break` out of `for await`, the remaining items stay in the queue.
-- There is no timeout or `AbortSignal` support yet; race `take()` against a timer if you need one.
+- `take({ signal })` cancels one consumer's wait (timeouts, shutting down a worker) without closing the queue. A cancelled `take()` leaves the line immediately, so it can never swallow an item; an already-aborted signal rejects without taking anything.
 
 ## Performance
 
