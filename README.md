@@ -1,5 +1,8 @@
 # queue-list
 
+[![CI](https://github.com/adarshakhatua/queue-list/actions/workflows/ci.yml/badge.svg)](https://github.com/adarshakhatua/queue-list/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/queue-list)](https://www.npmjs.com/package/queue-list)
+
 A small, dependency-free FIFO queue for JavaScript, implemented as a growable circular buffer.
 `enqueue` and `dequeue` are **amortized O(1)**; `peek`, `isEmpty`, `size` and `clear` are **O(1)**; `toArray` and iteration are O(n).
 Importing the package has **no side effects** (no global patching).
