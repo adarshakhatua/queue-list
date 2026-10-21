@@ -1,6 +1,6 @@
 {
   "name": "queue-list",
-  "version": "2.6.0",
+  "version": "2.6.1",
   "description": "Dependency-free queues for JavaScript: a fast FIFO queue, an async queue for producers and consumers, and a priority queue. Iteration, CommonJS and TypeScript types included",
   "type": "module",
   "sideEffects": false,
