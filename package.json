@@ -40,5 +40,9 @@
     "url": "https://github.com/adarshakhatua/queue-list/issues"
   },
   "homepage": "https://github.com/adarshakhatua/queue-list#readme",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "denque": "^2.1.0",
+    "yocto-queue": "^1.2.2"
+  }
 }

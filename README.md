@@ -69,11 +69,23 @@ In Node.js, `console.log(queue)` prints `Front -> |1| |"text"| <- Rear` through 
 `util.inspect.custom` hook. Nothing is patched globally. In browsers use `queue.toString()`
 or `queue.toArray()`.
 
+## Performance
+
+Median of 5 runs on Node 26 (Apple silicon), each library in its own process, in ms (lower is better):
+
+| Scenario | queue-list | denque | yocto-queue |
+|---|---|---|---|
+| Bulk: enqueue 1M items, then dequeue all | 12.5 | 13.7 | 39.2 |
+| Steady: 5M enqueue + dequeue pairs, ~100 items alive | 31.9 | 30.1 | 65.6 |
+
+queue-list is on par with `denque` and about 2-3x faster than `yocto-queue`. Numbers vary by machine;
+run `npm run bench` to reproduce. `denque` is a double-ended queue; queue-list is deliberately FIFO-only.
+
 ## Development
 
 ```sh
 npm test      # node:test, no dependencies
-npm run bench # enqueue + dequeue 1M items
+npm run bench # compares against denque and yocto-queue, one process each
 ```
 
 ## Migrating from 1.x
