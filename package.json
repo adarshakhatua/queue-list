@@ -3,6 +3,7 @@
   "version": "2.0.0",
   "description": "A fast, dependency-free FIFO queue (linked list) for JavaScript with O(1) enqueue/dequeue, iteration support and TypeScript types",
   "type": "module",
+  "sideEffects": false,
   "main": "index.js",
   "types": "index.d.ts",
   "exports": {
@@ -17,7 +18,7 @@
     "index.d.ts"
   ],
   "engines": {
-    "node": ">=14"
+    "node": ">=18"
   },
   "scripts": {
     "test": "node --test",
@@ -31,5 +32,13 @@
     "javascript"
   ],
   "author": "Adarsha Khatua",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/adarshakhatua/queue-list.git"
+  },
+  "bugs": {
+    "url": "https://github.com/adarshakhatua/queue-list/issues"
+  },
+  "homepage": "https://github.com/adarshakhatua/queue-list#readme",
   "license": "MIT"
 }
