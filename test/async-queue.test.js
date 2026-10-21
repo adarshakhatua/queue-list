@@ -168,10 +168,16 @@ test("close removes abort listeners from waiting consumers", async () => {
 });
 
 test("AbortSignal.timeout gives take a timeout without losing items", async () => {
-  const q = new AsyncQueue();
-  await assert.rejects(q.take({ signal: AbortSignal.timeout(10) }), { name: "TimeoutError" });
-  q.enqueue(1);
-  assert.equal(await q.take({ signal: AbortSignal.timeout(1000) }), 1);
+  // AbortSignal.timeout() timers don't keep the event loop alive, so hold it open here
+  const keepAlive = setTimeout(() => {}, 5000);
+  try {
+    const q = new AsyncQueue();
+    await assert.rejects(q.take({ signal: AbortSignal.timeout(10) }), { name: "TimeoutError" });
+    q.enqueue(1);
+    assert.equal(await q.take({ signal: AbortSignal.timeout(1000) }), 1);
+  } finally {
+    clearTimeout(keepAlive);
+  }
 });
 
 test("many cancelled waits do not accumulate", async () => {
