@@ -103,6 +103,8 @@ try {
 }
 ```
 
+`AbortSignal.timeout()` timers do not keep Node's event loop alive. If nothing else is running (for example a bare script that only awaits `take()`), the process can exit before the timeout fires; use an `AbortController` with `setTimeout` if the wait itself must keep the process running.
+
 | Member | Description |
 |---|---|
 | `new AsyncQueue(...values)` / `AsyncQueue.from(iterable)` | Create a queue, optionally with initial items |
