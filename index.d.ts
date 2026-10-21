@@ -12,6 +12,8 @@ export class Queue<T = unknown> implements Iterable<T> {
   size(): number;
   clear(): this;
   toArray(): T[];
+  /** Yields and removes items front first until empty; safe with stored null. */
+  drain(): IterableIterator<T>;
   toString(): string;
   getType(): "queue";
   [Symbol.iterator](): IterableIterator<T>;

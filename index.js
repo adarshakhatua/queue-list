@@ -81,6 +81,15 @@ class Queue {
     return [...this];
   }
 
+  /**
+   * Yields and removes items front first until the queue is empty.
+   * Items enqueued while draining are yielded too; breaking out early
+   * leaves the remaining items in the queue.
+   */
+  *drain() {
+    while (this.#size > 0) yield this.dequeue();
+  }
+
   *[Symbol.iterator]() {
     let node = this.#head;
     while (node !== null) {

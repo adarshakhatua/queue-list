@@ -82,6 +82,35 @@ test("iterable: for...of, spread, Queue.from", () => {
   assert.deepEqual(Queue.from(new Set([1, 1, 2])).toArray(), [1, 2]);
 });
 
+test("drain consumes items front first, including stored null", () => {
+  const q = new Queue(1, null, undefined, 0);
+  assert.deepEqual([...q.drain()], [1, null, undefined, 0]);
+  assert.equal(q.isEmpty(), true);
+  assert.equal(q.peek(), null);
+  assert.deepEqual([...q.drain()], [], "draining an empty queue yields nothing");
+  q.enqueue("reused");
+  assert.deepEqual(q.toArray(), ["reused"], "queue is usable after drain");
+});
+
+test("drain yields items enqueued while draining", () => {
+  const q = new Queue(1);
+  const seen = [];
+  for (const v of q.drain()) {
+    seen.push(v);
+    if (v < 3) q.enqueue(v + 1);
+  }
+  assert.deepEqual(seen, [1, 2, 3]);
+  assert.equal(q.size(), 0);
+});
+
+test("breaking out of drain leaves the rest in the queue", () => {
+  const q = Queue.from([1, 2, 3, 4]);
+  for (const v of q.drain()) {
+    if (v === 2) break;
+  }
+  assert.deepEqual(q.toArray(), [3, 4]);
+});
+
 test("toString / inspect formatting", () => {
   const q = new Queue(10, "text", { key: "value" });
   assert.equal(q.toString(), 'Front -> |10| |"text"| |{"key":"value"}| <- Rear');

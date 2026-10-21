@@ -29,6 +29,7 @@ q.peek();      // "two"
 q.size();      // 3  (also q.length)
 [...q];        // ["two", 3, { four: 4 }]
 for (const item of q) { /* iterates front -> rear without consuming */ }
+for (const item of q.drain()) { /* removes each item as it is yielded */ }
 
 Queue.from([1, 2, 3]);                // build from any iterable
 ```
@@ -46,6 +47,7 @@ Queue.from([1, 2, 3]);                // build from any iterable
 | `size()` / `length` | Number of items | `number` | O(1) |
 | `clear()` | Remove all items | the queue (chainable) | O(1) |
 | `toArray()` | Copy items to an array (front first) | `Array` | O(n) |
+| `drain()` | Iterate front -> rear, removing each item (includes items added while draining) | iterator | O(n) |
 | `[Symbol.iterator]` | `for...of` / spread support | iterator | O(n) |
 | `toString()` | `Front -> \|1\| \|"a"\| <- Rear` (empty: `Front -> [] <- Rear`) | `string` | O(n) |
 | `getType()` | Always `"queue"` | `"queue"` | O(1) |
@@ -53,11 +55,13 @@ Queue.from([1, 2, 3]);                // build from any iterable
 ### Empty queue vs stored `null`
 
 `dequeue()` and `peek()` return `null` when the queue is empty. Because `null` is also a valid
-item, use `isEmpty()` first if you may store `null`:
+item, use `drain()` (or check `isEmpty()` first) if you may store `null`:
 
 ```js
-while (!q.isEmpty()) handle(q.dequeue());
+for (const item of q.drain()) handle(item);   // empties the queue, null-safe
 ```
+
+If you `break` out of `drain()`, the items not yet yielded stay in the queue.
 
 ### Logging
 
