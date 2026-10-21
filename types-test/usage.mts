@@ -1,5 +1,5 @@
 // Compiled (never run) by `npm run test:types` to check the ESM typings.
-import Queue, { AsyncQueue, PriorityQueue, Queue as Named, QueueClosedError } from "queue-list";
+import Queue, { AsyncQueue, PriorityQueue, Queue as Named, QueueClosedError, QueueFullError } from "queue-list";
 
 type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? true : false;
 const assertType = <_T extends true>() => {};
@@ -67,3 +67,17 @@ pq.enqueue({ due: "soon" });
 new PriorityQueue<number>((a, b) => a > b);
 // @ts-expect-error comparator must be a function
 new PriorityQueue<number>(5);
+
+const bounded = AsyncQueue.bounded<string>(10);
+assertType<Equal<typeof bounded, AsyncQueue<string>>>();
+const boundedWithItems = AsyncQueue.bounded(3, new Set([1, 2]));
+assertType<Equal<typeof boundedWithItems, AsyncQueue<number>>>();
+assertType<Equal<typeof bounded.capacity, number>>();
+assertType<Equal<typeof bounded.full, boolean>>();
+assertType<Equal<ReturnType<typeof bounded.put>, Promise<void>>>();
+void bounded.put("x", { signal: ctrl.signal });
+assertType<Equal<InstanceType<typeof QueueFullError>["name"], string>>();
+// @ts-expect-error wrong item type
+bounded.put(1);
+// @ts-expect-error capacity must be a number
+AsyncQueue.bounded("10");

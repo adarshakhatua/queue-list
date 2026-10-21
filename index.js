@@ -346,16 +346,29 @@ class QueueClosedError extends Error {
   }
 }
 
+/** Thrown by enqueue() when a bounded AsyncQueue is full. Use put() to wait for space instead. */
+class QueueFullError extends Error {
+  constructor(message = "Queue is full") {
+    super(message);
+    this.name = "QueueFullError";
+  }
+}
+
 /**
  * A FIFO queue whose consumers wait for items instead of getting null.
  * take() resolves as soon as an item is available; close() ends the stream:
  * buffered items can still be taken, then take() rejects with QueueClosedError
  * and `for await` finishes. Waiting consumers are served in arrival order.
  * take({ signal }) lets a consumer stop waiting without losing any item.
+ *
+ * AsyncQueue.bounded(capacity) adds backpressure: put() waits while `capacity` items are
+ * buffered, and every take() lets the longest-waiting producer in.
  */
 class AsyncQueue {
   #items = new Queue();
   #waiters = new Set(); // pending take() calls in arrival order; Set allows O(1) cancel
+  #producers = new Set(); // pending put() calls (queue full), in arrival order
+  #capacity = Infinity;
   #closed = false;
 
   /** @param {...T} values initial items, front first */
@@ -370,11 +383,38 @@ class AsyncQueue {
     return queue;
   }
 
+  /**
+   * A queue that holds at most `capacity` buffered items, optionally starting with `iterable`.
+   * put() waits while it is full; enqueue() throws QueueFullError instead.
+   */
+  static bounded(capacity, iterable = []) {
+    if (!Number.isInteger(capacity) || capacity < 1) {
+      throw new RangeError("capacity must be a positive integer");
+    }
+    const queue = new AsyncQueue();
+    queue.#capacity = capacity;
+    for (const value of iterable) {
+      if (queue.#items.size() >= capacity) throw new RangeError("more initial items than capacity");
+      queue.enqueue(value);
+    }
+    return queue;
+  }
+
   get closed() {
     return this.#closed;
   }
 
-  /** Number of buffered items (not counting waiting consumers). */
+  /** Maximum number of buffered items; Infinity unless created with AsyncQueue.bounded(). */
+  get capacity() {
+    return this.#capacity;
+  }
+
+  /** True when a bounded queue holds `capacity` items (put() would wait). */
+  get full() {
+    return this.#items.size() >= this.#capacity;
+  }
+
+  /** Number of buffered items (not counting waiting consumers or producers). */
   get length() {
     return this.#items.size();
   }
@@ -387,10 +427,14 @@ class AsyncQueue {
     return this.#items.isEmpty();
   }
 
-  /** Adds an item, or hands it straight to the longest-waiting consumer. Throws if closed. */
+  /**
+   * Adds an item, or hands it straight to the longest-waiting consumer.
+   * Throws QueueClosedError if closed, and QueueFullError if a bounded queue is full.
+   */
   enqueue(value) {
     if (this.#closed) throw new QueueClosedError();
     if (this.#waiters.size === 0) {
+      if (this.#items.size() >= this.#capacity) throw new QueueFullError();
       this.#items.enqueue(value);
     } else {
       const waiter = this.#waiters.values().next().value;
@@ -398,6 +442,50 @@ class AsyncQueue {
       waiter.resolve(value);
     }
     return this;
+  }
+
+  /**
+   * Like enqueue(), but when a bounded queue is full it waits for space (in arrival order)
+   * instead of throwing. Resolves once the item is in the queue or with a consumer.
+   * Rejects with QueueClosedError if the queue closes first; the item is then not added.
+   *
+   * With `signal`, an abort rejects with `signal.reason` and the item is not added. An
+   * already-aborted signal rejects without adding anything.
+   * @param {{ signal?: AbortSignal }} [options]
+   */
+  put(value, { signal } = {}) {
+    if (signal?.aborted) return Promise.reject(signal.reason);
+    if (this.#closed) return Promise.reject(new QueueClosedError());
+    if (this.#waiters.size > 0 || this.#items.size() < this.#capacity) {
+      this.enqueue(value);
+      return Promise.resolve();
+    }
+    return new Promise((resolve, reject) => {
+      const stopListening = () => signal?.removeEventListener("abort", onAbort);
+      const producer = {
+        value,
+        resolve: () => { stopListening(); resolve(); },
+        reject: (error) => { stopListening(); reject(error); },
+      };
+      const onAbort = () => {
+        this.#producers.delete(producer);
+        producer.reject(signal.reason);
+      };
+      signal?.addEventListener("abort", onAbort, { once: true });
+      this.#producers.add(producer);
+    });
+  }
+
+  // Removes the front item and lets the longest-waiting producer fill the freed slot.
+  #shift() {
+    const value = this.#items.dequeue();
+    if (this.#producers.size > 0) {
+      const producer = this.#producers.values().next().value;
+      this.#producers.delete(producer);
+      this.#items.enqueue(producer.value);
+      producer.resolve();
+    }
+    return value;
   }
 
   /**
@@ -412,7 +500,7 @@ class AsyncQueue {
    */
   take({ signal } = {}) {
     if (signal?.aborted) return Promise.reject(signal.reason);
-    if (!this.#items.isEmpty()) return Promise.resolve(this.#items.dequeue());
+    if (!this.#items.isEmpty()) return Promise.resolve(this.#shift());
     if (this.#closed) return Promise.reject(new QueueClosedError());
     return new Promise((resolve, reject) => {
       const stopListening = () => signal?.removeEventListener("abort", onAbort);
@@ -429,13 +517,16 @@ class AsyncQueue {
     });
   }
 
-  /** Stops accepting items and rejects consumers still waiting. Idempotent. */
+  /** Stops accepting items and rejects consumers and producers still waiting. Idempotent. */
   close() {
     if (this.#closed) return this;
     this.#closed = true;
     const waiters = [...this.#waiters];
+    const producers = [...this.#producers];
     this.#waiters.clear();
+    this.#producers.clear();
     for (const waiter of waiters) waiter.reject(new QueueClosedError());
+    for (const producer of producers) producer.reject(new QueueClosedError());
     return this;
   }
 
@@ -465,4 +556,4 @@ class AsyncQueue {
 }
 
 export default Queue;
-export { Queue, AsyncQueue, PriorityQueue, QueueClosedError };
+export { Queue, AsyncQueue, PriorityQueue, QueueClosedError, QueueFullError };

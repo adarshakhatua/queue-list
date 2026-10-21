@@ -1,5 +1,5 @@
 // Compiled (never run) by `npm run test:types` to check the CommonJS typings.
-import { Queue, AsyncQueue, PriorityQueue, QueueClosedError } from "queue-list";
+import { Queue, AsyncQueue, PriorityQueue, QueueClosedError, QueueFullError } from "queue-list";
 
 const q = new Queue<string>("a");
 const first: string | null = q.dequeue();
@@ -8,4 +8,5 @@ const jobs = new AsyncQueue<number>();
 const next: Promise<number> = jobs.take();
 const error: Error = new QueueClosedError();
 const best: number | null = new PriorityQueue<number>().dequeue();
-void [first, last, next, error, best];
+const full: Error = new QueueFullError();
+void [first, last, next, error, best, full];

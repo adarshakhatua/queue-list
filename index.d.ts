@@ -58,22 +58,40 @@ export class PriorityQueue<T = unknown> implements Iterable<T> {
 export class QueueClosedError extends Error {
   constructor(message?: string);
 }
+export class QueueFullError extends Error {
+  constructor(message?: string);
+}
 export class AsyncQueue<T = unknown> implements AsyncIterable<T> {
   constructor(...values: T[]);
   static from<T>(iterable: Iterable<T>): AsyncQueue<T>;
+  /**
+   * A queue holding at most `capacity` buffered items (a positive integer), optionally starting
+   * with `iterable`. put() waits while it is full; enqueue() throws QueueFullError.
+   */
+  static bounded<T>(capacity: number, iterable?: Iterable<T>): AsyncQueue<T>;
   readonly closed: boolean;
+  /** Maximum number of buffered items; Infinity unless created with AsyncQueue.bounded(). */
+  readonly capacity: number;
+  /** True when a bounded queue holds `capacity` items. */
+  readonly full: boolean;
   /** Number of buffered items (not counting waiting consumers). */
   readonly length: number;
   size(): number;
   isEmpty(): boolean;
-  /** Throws QueueClosedError if the queue is closed. */
+  /** Throws QueueClosedError if closed, and QueueFullError if a bounded queue is full. */
   enqueue(value: T): this;
+  /**
+   * Like enqueue(), but waits for space when a bounded queue is full. Rejects with
+   * QueueClosedError if the queue closes first, or with `signal.reason` if aborted; the item
+   * is then not added.
+   */
+  put(value: T, options?: { signal?: AbortSignal }): Promise<void>;
   /**
    * Waits for an item; rejects with QueueClosedError once closed and empty.
    * If `signal` aborts first, rejects with `signal.reason` and takes nothing.
    */
   take(options?: { signal?: AbortSignal }): Promise<T>;
-  /** Idempotent. Buffered items can still be taken; waiting consumers are rejected. */
+  /** Idempotent. Buffered items can still be taken; waiting consumers and producers are rejected. */
   close(): this;
   /**
    * Takes items until the queue is closed and empty. If `signal` aborts first, the loop
