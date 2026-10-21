@@ -517,6 +517,51 @@ class AsyncQueue {
     });
   }
 
+  /**
+   * Takes a batch: waits for the first item, then also takes whatever is already buffered,
+   * up to `max`. With `timeout` (ms) it keeps collecting for that long after the first item,
+   * returning early once `max` items are in hand. Without it the batch ends right after the
+   * buffered items, so a batch is never delayed.
+   *
+   * Rejects with QueueClosedError if the queue is closed and empty, and with `signal.reason`
+   * if aborted before the first item. Once a batch has items, an abort or close ends the wait
+   * and returns the partial batch, so no item is ever lost.
+   * @param {{ max?: number, timeout?: number, signal?: AbortSignal }} [options]
+   * @returns {Promise<T[]>}
+   */
+  async takeBatch({ max = Infinity, timeout = 0, signal } = {}) {
+    if (typeof max !== "number" || !(max >= 1) || (max !== Infinity && !Number.isInteger(max))) {
+      throw new RangeError("max must be a positive integer");
+    }
+    if (typeof timeout !== "number" || !(timeout >= 0) || timeout === Infinity) {
+      throw new RangeError("timeout must be a finite number of milliseconds >= 0");
+    }
+    const batch = [await this.take({ signal })];
+    while (batch.length < max && !this.#items.isEmpty()) batch.push(this.#shift());
+    if (batch.length >= max || timeout === 0 || this.#closed) return batch;
+
+    // Linger for more items until the window ends, max is reached, the queue closes,
+    // or the caller aborts. A private controller covers all of those wake-ups.
+    const linger = new AbortController();
+    const timer = setTimeout(() => linger.abort(), timeout);
+    const onAbort = () => linger.abort();
+    signal?.addEventListener("abort", onAbort, { once: true });
+    try {
+      while (batch.length < max) {
+        try {
+          batch.push(await this.take({ signal: linger.signal }));
+        } catch {
+          break; // window over, aborted or closed: hand back what we have
+        }
+        while (batch.length < max && !this.#items.isEmpty()) batch.push(this.#shift());
+      }
+    } finally {
+      clearTimeout(timer);
+      signal?.removeEventListener("abort", onAbort);
+    }
+    return batch;
+  }
+
   /** Stops accepting items and rejects consumers and producers still waiting. Idempotent. */
   close() {
     if (this.#closed) return this;

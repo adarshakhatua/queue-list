@@ -201,3 +201,134 @@ test("several consumers on a bounded queue get every item exactly once", async (
   await producer;
   assert.deepEqual(all, Array.from({ length: 300 }, (_, i) => i));
 });
+
+// ---------- takeBatch() ----------
+
+test("takeBatch takes the buffered items up to max, in order", async () => {
+  const q = AsyncQueue.from([1, 2, 3, 4, 5]);
+  assert.deepEqual(await q.takeBatch({ max: 3 }), [1, 2, 3]);
+  assert.deepEqual(await q.takeBatch({ max: 10 }), [4, 5]);
+  assert.equal(q.size(), 0);
+});
+
+test("takeBatch without max takes everything buffered", async () => {
+  const q = AsyncQueue.from([1, 2, 3]);
+  assert.deepEqual(await q.takeBatch(), [1, 2, 3]);
+});
+
+test("takeBatch waits for the first item, then returns without lingering", async () => {
+  const q = new AsyncQueue();
+  const pending = q.takeBatch({ max: 10 });
+  await tick();
+  q.enqueue("a");
+  assert.deepEqual(await pending, ["a"]);
+});
+
+test("takeBatch with a timeout collects items that arrive within the window", async () => {
+  const q = new AsyncQueue();
+  setTimeout(() => q.enqueue(1), 5);
+  setTimeout(() => q.enqueue(2), 15);
+  setTimeout(() => q.enqueue(3), 300); // after the 80 ms window
+  const batch = await q.takeBatch({ max: 10, timeout: 80 });
+  assert.deepEqual(batch, [1, 2]);
+  assert.equal(await q.take(), 3, "the late item was not lost");
+});
+
+test("takeBatch returns early once max items are collected", async () => {
+  const q = new AsyncQueue();
+  setTimeout(() => q.enqueue(1), 5);
+  setTimeout(() => q.enqueue(2), 10);
+  const started = Date.now();
+  const batch = await q.takeBatch({ max: 2, timeout: 5000 });
+  assert.deepEqual(batch, [1, 2]);
+  assert.ok(Date.now() - started < 2000, "did not wait out the window");
+});
+
+test("takeBatch leaves no timer running after it returns", async () => {
+  const q = AsyncQueue.from([1]);
+  const timers = () => process.getActiveResourcesInfo().filter((name) => name === "Timeout").length;
+  const before = timers();
+  await q.takeBatch({ max: 1, timeout: 60_000 }); // max reached immediately
+  const q2 = new AsyncQueue();
+  setTimeout(() => q2.enqueue(1), 5);
+  await q2.takeBatch({ max: 2, timeout: 20 });
+  await sleep(5);
+  assert.equal(timers(), before);
+});
+
+test("takeBatch on a closed queue returns what is buffered, then rejects", async () => {
+  const q = AsyncQueue.from([1, 2, 3]);
+  q.close();
+  assert.deepEqual(await q.takeBatch({ max: 2, timeout: 5000 }), [1, 2], "does not linger once closed");
+  assert.deepEqual(await q.takeBatch({ max: 2 }), [3]);
+  await assert.rejects(q.takeBatch({ max: 2 }), QueueClosedError);
+});
+
+test("closing during the linger window returns the partial batch", async () => {
+  const q = new AsyncQueue(1);
+  setTimeout(() => q.close(), 10);
+  assert.deepEqual(await q.takeBatch({ max: 5, timeout: 5000 }), [1]);
+});
+
+test("takeBatch({ signal }): abort before the first item rejects and takes nothing", async () => {
+  const q = new AsyncQueue();
+  const ctrl = new AbortController();
+  const pending = q.takeBatch({ max: 3, signal: ctrl.signal });
+  await tick();
+  ctrl.abort();
+  await assert.rejects(pending, { name: "AbortError" });
+  q.enqueue("kept");
+  assert.equal(await q.take(), "kept");
+
+  const pre = new AbortController();
+  pre.abort();
+  const full = AsyncQueue.from([1, 2]);
+  await assert.rejects(full.takeBatch({ signal: pre.signal }), { name: "AbortError" });
+  assert.equal(full.size(), 2);
+});
+
+test("takeBatch({ signal }): abort while lingering returns the partial batch, losing nothing", async () => {
+  const q = AsyncQueue.from([1, 2]);
+  const ctrl = new AbortController();
+  setTimeout(() => ctrl.abort(), 10);
+  const batch = await q.takeBatch({ max: 10, timeout: 5000, signal: ctrl.signal });
+  assert.deepEqual(batch, [1, 2]);
+  assert.equal(getEventListeners(ctrl.signal, "abort").length, 0);
+  q.enqueue(3);
+  assert.equal(await q.take(), 3);
+});
+
+test("takeBatch frees space for waiting producers as it takes items", async () => {
+  const q = AsyncQueue.bounded(2, [1, 2]);
+  const p3 = q.put(3);
+  const p4 = q.put(4);
+  await tick();
+  assert.deepEqual(await q.takeBatch({ max: 4 }), [1, 2, 3, 4]);
+  await Promise.all([p3, p4]);
+  assert.equal(q.size(), 0);
+});
+
+test("takeBatch validates max and timeout", async () => {
+  const q = AsyncQueue.from([1]);
+  for (const max of [0, -1, 1.5, NaN, "2"]) {
+    await assert.rejects(q.takeBatch({ max }), RangeError, `max=${max}`);
+  }
+  for (const timeout of [-1, NaN, Infinity, "5"]) {
+    await assert.rejects(q.takeBatch({ timeout }), RangeError, `timeout=${timeout}`);
+  }
+  assert.equal(q.size(), 1, "invalid options take nothing");
+  assert.deepEqual(await q.takeBatch({ max: Infinity }), [1]);
+});
+
+test("concurrent batch consumers get disjoint batches covering every item", async () => {
+  const q = AsyncQueue.from(Array.from({ length: 100 }, (_, i) => i));
+  setTimeout(() => q.close(), 20);
+  const worker = async () => {
+    const got = [];
+    while (true) {
+      try { got.push(...(await q.takeBatch({ max: 7, timeout: 5 }))); } catch { return got; }
+    }
+  };
+  const all = (await Promise.all([worker(), worker(), worker()])).flat().sort((a, b) => a - b);
+  assert.deepEqual(all, Array.from({ length: 100 }, (_, i) => i));
+});

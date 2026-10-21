@@ -68,6 +68,7 @@ new PriorityQueue<number>((a, b) => a > b);
 // @ts-expect-error comparator must be a function
 new PriorityQueue<number>(5);
 
+// bounded AsyncQueue, put() and takeBatch()
 const bounded = AsyncQueue.bounded<string>(10);
 assertType<Equal<typeof bounded, AsyncQueue<string>>>();
 const boundedWithItems = AsyncQueue.bounded(3, new Set([1, 2]));
@@ -75,9 +76,18 @@ assertType<Equal<typeof boundedWithItems, AsyncQueue<number>>>();
 assertType<Equal<typeof bounded.capacity, number>>();
 assertType<Equal<typeof bounded.full, boolean>>();
 assertType<Equal<ReturnType<typeof bounded.put>, Promise<void>>>();
+assertType<Equal<ReturnType<typeof bounded.takeBatch>, Promise<string[]>>>();
 void bounded.put("x", { signal: ctrl.signal });
+void bounded.takeBatch({ max: 10, timeout: 50, signal: ctrl.signal });
+void bounded.takeBatch();
 assertType<Equal<InstanceType<typeof QueueFullError>["name"], string>>();
 // @ts-expect-error wrong item type
 bounded.put(1);
 // @ts-expect-error capacity must be a number
 AsyncQueue.bounded("10");
+// @ts-expect-error max must be a number
+bounded.takeBatch({ max: "10" });
+// @ts-expect-error timeout must be a number
+bounded.takeBatch({ timeout: "50" });
+// @ts-expect-error unknown option
+bounded.takeBatch({ maxItems: 5 });

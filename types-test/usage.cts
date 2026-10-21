@@ -8,5 +8,6 @@ const jobs = new AsyncQueue<number>();
 const next: Promise<number> = jobs.take();
 const error: Error = new QueueClosedError();
 const best: number | null = new PriorityQueue<number>().dequeue();
+const batch: Promise<number[]> = AsyncQueue.bounded<number>(5).takeBatch({ max: 5 });
 const full: Error = new QueueFullError();
-void [first, last, next, error, best, full];
+void [first, last, next, error, best, batch, full];

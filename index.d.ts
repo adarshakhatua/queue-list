@@ -91,6 +91,13 @@ export class AsyncQueue<T = unknown> implements AsyncIterable<T> {
    * If `signal` aborts first, rejects with `signal.reason` and takes nothing.
    */
   take(options?: { signal?: AbortSignal }): Promise<T>;
+  /**
+   * Waits for the first item, then takes what is already buffered up to `max`. With `timeout`
+   * (ms) it keeps collecting that long after the first item. Rejects with QueueClosedError if
+   * closed and empty, or `signal.reason` if aborted before the first item; after that, an
+   * abort or close returns the partial batch.
+   */
+  takeBatch(options?: { max?: number; timeout?: number; signal?: AbortSignal }): Promise<T[]>;
   /** Idempotent. Buffered items can still be taken; waiting consumers and producers are rejected. */
   close(): this;
   /**
