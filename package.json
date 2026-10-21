@@ -1,6 +1,6 @@
 {
   "name": "queue-list",
-  "version": "2.3.0",
+  "version": "2.3.1",
   "description": "A fast, dependency-free FIFO queue (circular buffer) for JavaScript with O(1) enqueue/dequeue, iteration support and TypeScript types",
   "type": "module",
   "sideEffects": false,
