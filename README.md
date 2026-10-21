@@ -11,15 +11,15 @@ Importing the package has **no side effects** (no global patching).
 npm install queue-list
 ```
 
-ESM only. TypeScript types are included.
-
-**Using `require()` (CommonJS):** on Node 20.19+ / 22.12+ you can load it with the named export:
+Works with `import` and `require()`, on Node 18+. TypeScript types are included.
 
 ```js
-const { Queue } = require("queue-list");
+import Queue, { AsyncQueue } from "queue-list";          // ESM
+const { Queue, AsyncQueue } = require("queue-list");     // CommonJS (named exports only)
 ```
 
-Older Node versions need `import()` instead: `const { Queue } = await import("queue-list");`
+If one part of your app uses `import` and another uses `require()`, you get two separate copies of the
+classes, so `instanceof` checks across them fail. Pick one style for the same package.
 
 ```js
 import Queue from "queue-list";
@@ -140,8 +140,9 @@ run `npm run bench` to reproduce. `denque` is a double-ended queue; queue-list i
 ## Development
 
 ```sh
-npm test      # node:test, no dependencies
-npm run bench # compares against denque and yocto-queue, one process each
+npm run build      # regenerate index.cjs / index.d.cts from index.js / index.d.ts (also checked by the tests)
+npm test           # node:test, no dependencies
+npm run bench      # compares against denque and yocto-queue, one process each
 ```
 
 ## Migrating from 1.x
