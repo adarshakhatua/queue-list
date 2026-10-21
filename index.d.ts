@@ -18,4 +18,23 @@ export class Queue<T = unknown> implements Iterable<T> {
   getType(): "queue";
   [Symbol.iterator](): IterableIterator<T>;
 }
+export class QueueClosedError extends Error {
+  constructor(message?: string);
+}
+export class AsyncQueue<T = unknown> implements AsyncIterable<T> {
+  constructor(...values: T[]);
+  static from<T>(iterable: Iterable<T>): AsyncQueue<T>;
+  readonly closed: boolean;
+  /** Number of buffered items (not counting waiting consumers). */
+  readonly length: number;
+  size(): number;
+  isEmpty(): boolean;
+  /** Throws QueueClosedError if the queue is closed. */
+  enqueue(value: T): this;
+  /** Waits for an item; rejects with QueueClosedError once closed and empty. */
+  take(): Promise<T>;
+  /** Idempotent. Buffered items can still be taken; waiting consumers are rejected. */
+  close(): this;
+  [Symbol.asyncIterator](): AsyncIterableIterator<T>;
+}
 export default Queue;

@@ -29,7 +29,8 @@
     "fifo",
     "ring-buffer",
     "data-structure",
-    "javascript"
+    "javascript",
+    "async-queue"
   ],
   "author": "Adarsha Khatua",
   "repository": {

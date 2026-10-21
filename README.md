@@ -72,6 +72,43 @@ In Node.js, `console.log(queue)` prints `Front -> |1| |"text"| <- Rear` through 
 `util.inspect.custom` hook. Nothing is patched globally. In browsers use `queue.toString()`
 or `queue.toArray()`.
 
+## AsyncQueue
+
+A queue whose consumers **wait** for items instead of getting `null`. Use it between a producer and a
+consumer: job runners, message streams, crawlers.
+
+```js
+import { AsyncQueue } from "queue-list";
+
+const jobs = new AsyncQueue();
+
+// consumer: waits when the queue is empty, ends when it is closed and drained
+(async () => {
+  for await (const job of jobs) await handle(job);
+  console.log("all jobs done");
+})();
+
+// producer
+jobs.enqueue({ id: 1 }).enqueue({ id: 2 });
+jobs.close();   // no more items; consumers finish what is buffered, then stop
+```
+
+| Member | Description |
+|---|---|
+| `new AsyncQueue(...values)` / `AsyncQueue.from(iterable)` | Create a queue, optionally with initial items |
+| `enqueue(value)` | Add an item, or hand it to the longest-waiting consumer. Chainable. Throws `QueueClosedError` if closed |
+| `take()` | `Promise` of the front item; waits if empty. Rejects with `QueueClosedError` once closed and empty |
+| `close()` | Stop accepting items and reject waiting consumers. Buffered items can still be taken. Idempotent |
+| `for await (const x of q)` | Takes items until the queue is closed and empty |
+| `closed` | `true` after `close()` |
+| `size()` / `length`, `isEmpty()` | Buffered items (waiting consumers are not counted) |
+
+Notes:
+- Stored `null` / `undefined` values are delivered normally; `take()` never confuses them with "empty".
+- Several consumers can share one queue; each item goes to exactly one of them, and waiting consumers are served in arrival order.
+- If you `break` out of `for await`, the remaining items stay in the queue.
+- There is no timeout or `AbortSignal` support yet; race `take()` against a timer if you need one.
+
 ## Performance
 
 Median of 5 runs on Node 26 (Apple silicon), each library in its own process, in ms (lower is better):

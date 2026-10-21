@@ -141,5 +141,95 @@ class Queue {
   }
 }
 
+/** Thrown by AsyncQueue when enqueueing to, or taking from, a closed queue. */
+class QueueClosedError extends Error {
+  constructor(message = "Queue is closed") {
+    super(message);
+    this.name = "QueueClosedError";
+  }
+}
+
+/**
+ * A FIFO queue whose consumers wait for items instead of getting null.
+ * take() resolves as soon as an item is available; close() ends the stream:
+ * buffered items can still be taken, then take() rejects with QueueClosedError
+ * and `for await` finishes. Waiting consumers are served in arrival order.
+ */
+class AsyncQueue {
+  #items = new Queue();
+  #waiters = new Queue(); // { resolve, reject } of pending take() calls
+  #closed = false;
+
+  /** @param {...T} values initial items, front first */
+  constructor(...values) {
+    for (const value of values) this.enqueue(value);
+  }
+
+  /** Build an async queue from any iterable. */
+  static from(iterable) {
+    const queue = new AsyncQueue();
+    for (const value of iterable) queue.enqueue(value);
+    return queue;
+  }
+
+  get closed() {
+    return this.#closed;
+  }
+
+  /** Number of buffered items (not counting waiting consumers). */
+  get length() {
+    return this.#items.size();
+  }
+
+  size() {
+    return this.#items.size();
+  }
+
+  isEmpty() {
+    return this.#items.isEmpty();
+  }
+
+  /** Adds an item, or hands it straight to the longest-waiting consumer. Throws if closed. */
+  enqueue(value) {
+    if (this.#closed) throw new QueueClosedError();
+    if (this.#waiters.isEmpty()) this.#items.enqueue(value);
+    else this.#waiters.dequeue().resolve(value);
+    return this;
+  }
+
+  /**
+   * Resolves with the front item, waiting for one if the queue is empty.
+   * Rejects with QueueClosedError once the queue is closed and empty.
+   * Safe for stored null/undefined values.
+   */
+  take() {
+    if (!this.#items.isEmpty()) return Promise.resolve(this.#items.dequeue());
+    if (this.#closed) return Promise.reject(new QueueClosedError());
+    return new Promise((resolve, reject) => this.#waiters.enqueue({ resolve, reject }));
+  }
+
+  /** Stops accepting items and rejects consumers still waiting. Idempotent. */
+  close() {
+    if (this.#closed) return this;
+    this.#closed = true;
+    for (const waiter of this.#waiters.drain()) waiter.reject(new QueueClosedError());
+    return this;
+  }
+
+  /** `for await (const item of queue)` takes items until the queue is closed and empty. */
+  async *[Symbol.asyncIterator]() {
+    while (true) {
+      let item;
+      try {
+        item = await this.take();
+      } catch (error) {
+        if (error instanceof QueueClosedError) return;
+        throw error;
+      }
+      yield item;
+    }
+  }
+}
+
 export default Queue;
-export { Queue };
+export { Queue, AsyncQueue, QueueClosedError };
